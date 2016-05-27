@@ -77,6 +77,9 @@ typedef enum {
 #ifdef TRANSPONDER
     TASK_TRANSPONDER,
 #endif
+#ifdef UUXSERIAL
+    TASK_UUXSERIAL,
+#endif
 
     /* Count of real tasks */
     TASK_COUNT,

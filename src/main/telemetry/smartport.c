@@ -239,18 +239,21 @@ bool isSmartPortTimedOut(void)
     return smartPortState >= SPSTATE_TIMEDOUT;
 }
 
-void checkSmartPortTelemetryState(void)
+int checkSmartPortTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(smartPortPortSharing);
 
     if (newTelemetryEnabledValue == smartPortTelemetryEnabled) {
-        return;
+        return 0;
     }
 
-    if (newTelemetryEnabledValue)
+    if (newTelemetryEnabledValue) {
         configureSmartPortTelemetryPort();
-    else
+        return 0;
+    } else {
         freeSmartPortTelemetryPort();
+        return 1;
+    }
 }
 
 void handleSmartPortTelemetry(void)

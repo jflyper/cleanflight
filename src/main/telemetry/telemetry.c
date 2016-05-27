@@ -82,13 +82,13 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing)
     return enabled;
 }
 
-void telemetryCheckState(void)
+int telemetryCheckState(void)
 {
-    checkFrSkyTelemetryState();
-    checkHoTTTelemetryState();
-    checkSmartPortTelemetryState();
-    checkLtmTelemetryState();
-    checkMAVLinkTelemetryState();
+    return checkFrSkyTelemetryState()
+        + checkHoTTTelemetryState()
+        + checkSmartPortTelemetryState()
+        + checkLtmTelemetryState()
+        + checkMAVLinkTelemetryState();
 }
 
 void telemetryProcess(uint16_t deadband3d_throttle)

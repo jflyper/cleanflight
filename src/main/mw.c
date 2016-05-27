@@ -588,8 +588,9 @@ void processRx(void)
             releaseSharedTelemetryPorts();
         } else {
             // the telemetry state must be checked immediately so that shared serial ports are released.
-            telemetryCheckState();
-            mspSerialAllocatePorts();
+            if (telemetryCheckState()) {
+                mspSerialAllocatePorts();
+            }
         }
     }
 #endif
@@ -641,8 +642,10 @@ void taskMainPidLoop(void)
     // Calculate average cycle time and average jitter
     filteredCycleTime = filterApplyPt1(cycleTime, &filteredCycleTimeState, 1, dT);
 
+#if 0
     debug[0] = cycleTime;
     debug[1] = cycleTime - filteredCycleTime;
+#endif
 
     imuUpdateGyroAndAttitude();
 
@@ -919,5 +922,13 @@ void taskTransponder(void)
     if (feature(FEATURE_TRANSPONDER)) {
         updateTransponder();
     }
+}
+#endif
+
+#ifdef UUXSERIAL
+extern void uuxProcess(void);
+void taskUUXSerial(void)
+{
+    uuxProcess();
 }
 #endif

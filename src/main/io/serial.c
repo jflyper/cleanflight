@@ -43,6 +43,10 @@
 #include "drivers/serial_usb_vcp.h"
 #endif
 
+#if defined(USE_UUXSERIAL1) || defined(USE_UUXSERIAL2) || defined(USE_UUXSERIAL3) || defined(USE_UUXSERIAL4) || defined(USE_UUXSERIAL5) || defined(USE_UUXSERIAL6) || defined(USE_UUXSERIAL7) || defined(USE_UUXSERIAL8)
+#include "drivers/serial_nxp7x0.h"
+#endif
+
 #include "io/serial.h"
 #include "serial_cli.h"
 #include "serial_msp.h"
@@ -108,6 +112,30 @@ const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 #endif
 #ifdef USE_SOFTSERIAL2
     SERIAL_PORT_SOFTSERIAL2,
+#endif
+#ifdef USE_UUXSERIAL1
+    SERIAL_PORT_UUXSERIAL1,
+#endif
+#ifdef USE_UUXSERIAL2
+    SERIAL_PORT_UUXSERIAL2,
+#endif
+#ifdef USE_UUXSERIAL3
+    SERIAL_PORT_UUXSERIAL3,
+#endif
+#ifdef USE_UUXSERIAL4
+    SERIAL_PORT_UUXSERIAL4,
+#endif
+#ifdef USE_UUXSERIAL5
+    SERIAL_PORT_UUXSERIAL5,
+#endif
+#ifdef USE_UUXSERIAL6
+    SERIAL_PORT_UUXSERIAL6,
+#endif
+#ifdef USE_UUXSERIAL7
+    SERIAL_PORT_UUXSERIAL7,
+#endif
+#ifdef USE_UUXSERIAL8
+    SERIAL_PORT_UUXSERIAL8,
 #endif
 };
 
@@ -356,6 +384,71 @@ serialPort_t *openSerialPort(
             serialSetMode(serialPort, mode);
             break;
 #endif
+
+#ifdef USE_UUXSERIAL1
+        case SERIAL_PORT_UUXSERIAL1:
+            serialPort = openUUXSerial(UUXSERIAL1, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL2
+        case SERIAL_PORT_UUXSERIAL2:
+            serialPort = openUUXSerial(UUXSERIAL2, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL3
+        case SERIAL_PORT_UUXSERIAL3:
+            serialPort = openUUXSerial(UUXSERIAL3, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL4
+        case SERIAL_PORT_UUXSERIAL4:
+            serialPort = openUUXSerial(UUXSERIAL4, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL5
+        case SERIAL_PORT_UUXSERIAL5:
+            serialPort = openUUXSerial(UUXSERIAL5, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL6
+        case SERIAL_PORT_UUXSERIAL6:
+            serialPort = openUUXSerial(UUXSERIAL6, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL7
+        case SERIAL_PORT_UUXSERIAL7:
+            serialPort = openUUXSerial(UUXSERIAL7, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
+#ifdef USE_UUXSERIAL8
+        case SERIAL_PORT_UUXSERIAL8:
+            serialPort = openUUXSerial(UUXSERIAL8, callback, baudRate, options);
+            if (serialPort) // External device may fail to initialize
+                serialSetMode(serialPort, mode);
+            break;
+#endif
+
         default:
             break;
     }

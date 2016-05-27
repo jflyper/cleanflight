@@ -467,18 +467,21 @@ bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
     return currentMillis - lastCycleTime >= CYCLETIME;
 }
 
-void checkFrSkyTelemetryState(void)
+int checkFrSkyTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(frskyPortSharing);
 
     if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
-        return;
+        return 0;
     }
 
-    if (newTelemetryEnabledValue)
+    if (newTelemetryEnabledValue) {
         configureFrSkyTelemetryPort();
-    else
+        return 0;
+    } else {
         freeFrSkyTelemetryPort();
+        return 1;
+    }
 }
 
 void handleFrSkyTelemetry(uint16_t deadband3d_throttle)

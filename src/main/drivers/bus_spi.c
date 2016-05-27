@@ -17,6 +17,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h> // For NULL
+#include <string.h> // For memcpy
 
 #include <platform.h>
 
@@ -25,6 +27,8 @@
 #include "gpio.h"
 
 #include "bus_spi.h"
+
+#ifdef USE_SPI
 
 #ifdef USE_SPI_DEVICE_1
 
@@ -40,6 +44,9 @@
 #define SPI1_MOSI_PIN           GPIO_Pin_7
 #define SPI1_MOSI_PIN_SOURCE    GPIO_PinSource7
 #endif
+
+static spiSettings_t spi1default;
+static spiSettings_t *spi1current = NULL;
 
 void initSpi1(void)
 {
@@ -155,6 +162,8 @@ void initSpi1(void)
     SPI_RxFIFOThresholdConfig(SPI1, SPI_RxFIFOThreshold_QF);
 #endif
 
+    memcpy(&spi1default.spi, &spi, sizeof(SPI_InitTypeDef));
+
     SPI_Init(SPI1, &spi);
     SPI_Cmd(SPI1, ENABLE);
 
@@ -179,6 +188,9 @@ void initSpi1(void)
 #define SPI2_MOSI_PIN           GPIO_Pin_15
 #define SPI2_MOSI_PIN_SOURCE    GPIO_PinSource15
 #endif
+
+static spiSettings_t spi2default;
+static spiSettings_t *spi2current = NULL;
 
 void initSpi2(void)
 {
@@ -294,6 +306,8 @@ void initSpi2(void)
     SPI_RxFIFOThresholdConfig(SPI2, SPI_RxFIFOThreshold_QF);
 #endif
 
+    memcpy(&spi2default.spi, &spi, sizeof(SPI_InitTypeDef));
+
     SPI_Init(SPI2, &spi);
     SPI_Cmd(SPI2, ENABLE);
 
@@ -320,6 +334,9 @@ void initSpi2(void)
 #define SPI3_MOSI_PIN           GPIO_Pin_5
 #define SPI3_MOSI_PIN_SOURCE    GPIO_PinSource5
 #endif
+
+static spiSettings_t spi3default;
+static spiSettings_t *spi3current = NULL;
 
 void initSpi3(void)
 {
@@ -409,6 +426,8 @@ void initSpi3(void)
 
     // Configure for 8-bit reads.
     SPI_RxFIFOThresholdConfig(SPI3, SPI_RxFIFOThreshold_QF);
+
+    memcpy(&spi3default.spi, &spi, sizeof(SPI_InitTypeDef));
 
     SPI_Init(SPI3, &spi);
     SPI_Cmd(SPI3, ENABLE);
@@ -526,6 +545,88 @@ void spiTransfer(SPI_TypeDef *instance, uint8_t *out, const uint8_t *in, int len
     }
 }
 
+void spiSetSettings(SPI_TypeDef *instance, spiSettings_t *settings)
+{
+#ifdef USE_SPI_DEVICE_1
+    if (instance == SPI1) {
+        if (spi1current != settings) {
+            spi1current = settings;
+            goto set;
+        }
+        return;
+    }
+#endif
+
+#ifdef USE_SPI_DEVICE_2
+    if (instance == SPI2) {
+        if (spi2current != settings) {
+            spi2current = settings;
+            goto set;
+        }
+        return;
+    }
+#endif 
+
+#ifdef USE_SPI_DEVICE_3
+    if (instance == SPI3) {
+        if (spi3current != settings) {
+            spi3current = settings;
+            goto set;
+        }
+        return;
+    }
+#endif
+
+set:;
+    SPI_Init(instance, &settings->spi);
+    spiSetDivisor(instance, settings->divisor);
+}
+
+void spiInitSettings(SPI_TypeDef *instance, spiSettings_t *settings, int spimode, uint16_t divisor)
+{
+#ifdef USE_SPI_DEVICE_1
+    if (instance == SPI1) {
+        memcpy(&settings->spi, &spi1default, sizeof(SPI_InitTypeDef));
+        goto set;
+    }
+#endif
+
+#ifdef USE_SPI_DEVICE_2
+    if (instance == SPI2) {
+        memcpy(&settings->spi, &spi2default, sizeof(SPI_InitTypeDef));
+        goto set;
+    }
+#endif
+
+#ifdef USE_SPI_DEVICE_3
+    if (instance == SPI3) {
+        memcpy(&settings->spi, &spi3default, sizeof(SPI_InitTypeDef));
+        goto set;
+    }
+#endif
+
+set:;
+    switch (spimode) {
+    case 0:
+        settings->spi.SPI_CPOL = SPI_CPOL_Low;
+        settings->spi.SPI_CPHA = SPI_CPHA_1Edge;
+        break;
+    case 1:
+        settings->spi.SPI_CPOL = SPI_CPOL_Low;
+        settings->spi.SPI_CPHA = SPI_CPHA_2Edge;
+        break;
+    case 2:
+        settings->spi.SPI_CPOL = SPI_CPOL_High;
+        settings->spi.SPI_CPHA = SPI_CPHA_1Edge;
+        break;
+    case 3:
+        settings->spi.SPI_CPOL = SPI_CPOL_High;
+        settings->spi.SPI_CPHA = SPI_CPHA_2Edge;
+        break;
+    }
+
+    settings->divisor = divisor;
+}
 
 void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor)
 {
@@ -583,3 +684,4 @@ void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor)
 
     SPI_Cmd(instance, ENABLE);
 }
+#endif

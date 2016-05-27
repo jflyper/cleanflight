@@ -30,7 +30,8 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 17
 
-#define EXTI_CALLBACK_HANDLER_COUNT 2 // MPU data ready and MAG data ready
+//#define EXTI_CALLBACK_HANDLER_COUNT 2 // MPU data ready and MAG data ready
+#define EXTI_CALLBACK_HANDLER_COUNT 3 // MPU data ready and MAG data ready I2CSERIAL
 
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
@@ -61,6 +62,7 @@
 #define BEEPER
 #define LED0
 
+#if 0
 #define SONAR
 #define SONAR_TRIGGER_PIN           Pin_0   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_TRIGGER_GPIO          GPIOB
@@ -69,13 +71,22 @@
 #define SONAR_EXTI_LINE             EXTI_Line1
 #define SONAR_EXTI_PIN_SOURCE       EXTI_PinSource1
 #define SONAR_EXTI_IRQN             EXTI1_IRQn
+#endif
 
 #define USE_UART1
 #define USE_UART2
 #define USE_UART3
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
-#define SERIAL_PORT_COUNT 5
+#define USE_UUXSERIAL1
+#define USE_UUXSERIAL2
+#define USE_UUXSERIAL3
+#define USE_UUXSERIAL4
+#define USE_UUXSERIAL5
+#define USE_UUXSERIAL6
+#define USE_UUXSERIAL7
+#define USE_UUXSERIAL8
+#define SERIAL_PORT_COUNT 13
 
 #ifndef UART1_GPIO
 #define UART1_TX_PIN        GPIO_Pin_9  // PA9

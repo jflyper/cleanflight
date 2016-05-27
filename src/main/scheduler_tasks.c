@@ -38,6 +38,7 @@ void taskTelemetry(void);
 void taskLedStrip(void);
 void taskTransponder(void);
 void taskSystem(void);
+void taskUUXSerial(void);
 
 cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_SYSTEM] = {
@@ -96,7 +97,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_GPS] = {
         .taskName = "GPS",
         .taskFunc = taskProcessGPS,
-        .desiredPeriod = 1000000 / 10,          // GPS usually don't go faster than 10Hz
+        .desiredPeriod = 1000000 / 100,         // 115 (<256) bytes/call @ 115K
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
 #endif
@@ -170,6 +171,16 @@ cfTask_t cfTasks[TASK_COUNT] = {
         .taskFunc = taskLedStrip,
         .desiredPeriod = 1000000 / 100,         // 100 Hz, every 10 ms
         .staticPriority = TASK_PRIORITY_IDLE,
+    },
+#endif
+
+#ifdef UUXSERIAL
+    [TASK_UUXSERIAL] = {
+        .taskName = "UUXSERIAL",
+        .taskFunc = taskUUXSerial,
+        //.desiredPeriod = 1000000 / 100,
+        .desiredPeriod = 1000000 / 2000,      // 2KHz, 160,000 bps @ 8 bytes
+        .staticPriority = TASK_PRIORITY_HIGH,
     },
 #endif
 };

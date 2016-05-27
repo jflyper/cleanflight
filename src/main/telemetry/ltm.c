@@ -282,14 +282,17 @@ void configureLtmTelemetryPort(void)
     ltmEnabled = true;
 }
 
-void checkLtmTelemetryState(void)
+int checkLtmTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(ltmPortSharing);
     if (newTelemetryEnabledValue == ltmEnabled)
-        return;
-    if (newTelemetryEnabledValue)
+        return 0;
+    if (newTelemetryEnabledValue) {
         configureLtmTelemetryPort();
-    else
+        return 0;
+    } else {
         freeLtmTelemetryPort();
+        return 1;
+    }
 }
 #endif

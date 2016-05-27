@@ -93,7 +93,7 @@ static volatile bool error = false;
 static volatile bool busy;
 
 static volatile uint8_t addr;
-static volatile uint8_t reg;
+static volatile int reg;
 static volatile uint8_t bytes;
 static volatile uint8_t writing;
 static volatile uint8_t reading;
@@ -108,7 +108,7 @@ static bool i2cHandleHardwareFailure(void)
     return false;
 }
 
-bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
+bool i2cWriteBuffer(uint8_t addr_, int reg_, uint8_t len_, uint8_t *data)
 {
     uint32_t timeout = I2C_DEFAULT_TIMEOUT;
 
@@ -128,7 +128,7 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
             while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
-            if (timeout == 0) {
+            if (error || timeout == 0) {
                 return i2cHandleHardwareFailure();
             }
             I2C_GenerateSTART(I2Cx, ENABLE);                            // send the start for the new job
@@ -138,19 +138,19 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
 
     timeout = I2C_DEFAULT_TIMEOUT;
     while (busy && --timeout > 0) { ; }
-    if (timeout == 0) {
+    if (error || timeout == 0) {
         return i2cHandleHardwareFailure();
     }
 
-    return !error;
+    return true;
 }
 
-bool i2cWrite(uint8_t addr_, uint8_t reg_, uint8_t data)
+bool i2cWrite(uint8_t addr_, int reg_, uint8_t data)
 {
     return i2cWriteBuffer(addr_, reg_, 1, &data);
 }
 
-bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
+bool i2cRead(uint8_t addr_, int reg_, uint8_t len, uint8_t* buf)
 {
     uint32_t timeout = I2C_DEFAULT_TIMEOUT;
 
@@ -170,7 +170,7 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
             while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
-            if (timeout == 0)
+            if (error || timeout == 0)
                 return i2cHandleHardwareFailure();
             I2C_GenerateSTART(I2Cx, ENABLE);                            // send the start for the new job
         }
@@ -179,10 +179,10 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
 
     timeout = I2C_DEFAULT_TIMEOUT;
     while (busy && --timeout > 0) { ; }
-    if (timeout == 0)
+    if (error || timeout == 0)
         return i2cHandleHardwareFailure();
 
-    return !error;
+    return true;
 }
 
 static void i2c_er_handler(void)
@@ -225,14 +225,14 @@ void i2c_ev_handler(void)
         I2Cx->CR1 &= ~0x0800;                                           // reset the POS bit so ACK/NACK applied to the current byte
         I2C_AcknowledgeConfig(I2Cx, ENABLE);                            // make sure ACK is on
         index = 0;                                                      // reset the index
-        if (reading && (subaddress_sent || 0xFF == reg)) {              // we have sent the subaddr
+        if (reading && (subaddress_sent || -1 == reg)) {                // we have sent the subaddr
             subaddress_sent = 1;                                        // make sure this is set in case of no subaddress, so following code runs correctly
             if (bytes == 2)
                 I2Cx->CR1 |= 0x0800;                                    // set the POS bit so NACK applied to the final byte in the two byte read
             I2C_Send7bitAddress(I2Cx, addr, I2C_Direction_Receiver);    // send the address and set hardware mode
         } else {                                                        // direction is Tx, or we havent sent the sub and rep start
             I2C_Send7bitAddress(I2Cx, addr, I2C_Direction_Transmitter); // send the address and set hardware mode
-            if (reg != 0xFF)                                            // 0xFF as subaddress means it will be ignored, in Tx or Rx mode
+            if (reg != -1)                                              // -1 as subaddress means it will be ignored, in Tx or Rx mode
                 index = -1;                                             // send a subaddress
         }
     } else if (SReg_1 & 0x0002) {                                       // we just sent the address - EV6 in ref manual
