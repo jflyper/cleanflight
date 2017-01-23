@@ -71,7 +71,8 @@
 #define USE_SPI_DEVICE_1 // PA4, 5, 6, 7
 #define USE_SPI_DEVICE_2 // PB12,13,14,15 on AF5
 
-#define VTX
+#define VTX_RTC6705
+#define VTX_RTC6705_SPI
 #define RTC6705_CS_GPIO         GPIOA
 #define RTC6705_CS_PIN          GPIO_Pin_4
 #define RTC6705_SPI_INSTANCE    SPI1

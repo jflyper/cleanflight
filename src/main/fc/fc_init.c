@@ -57,7 +57,9 @@
 #include "drivers/usb_io.h"
 #include "drivers/transponder_ir.h"
 #include "drivers/exti.h"
-#include "drivers/vtx_soft_spi_rtc6705.h"
+#include "drivers/bus_spi_soft.h"
+#include "drivers/vtx_rtc6705_softspi.h"
+#include "drivers/vtx_rtc6705_spi.h"
 
 #ifdef USE_BST
 #include "bus_bst.h"
@@ -90,7 +92,7 @@
 #include "io/transponder_ir.h"
 #include "io/osd.h"
 #include "io/displayport_msp.h"
-#include "io/vtx.h"
+#include "io/vtx_singularity.h"
 #include "io/vtx_smartaudio.h"
 #include "io/vtx_tramp.h"
 
@@ -344,8 +346,8 @@ void init(void)
     updateHardwareRevision();
 #endif
 
-#ifdef VTX
-    vtxInit();
+#ifdef VTX_RTC6705_SPI
+    rtc6705_spi_init();
 #endif
 
 #if defined(SONAR_SOFTSERIAL2_EXCLUSIVE) && defined(SONAR) && defined(USE_SOFTSERIAL2)
@@ -380,12 +382,12 @@ void init(void)
     }
 #endif
 
-#ifdef USE_RTC6705
+#ifdef VTX_RTC6705_SOFTSPI
     if (feature(FEATURE_VTX)) {
-        rtc6705_soft_spi_init();
-        current_vtx_channel = masterConfig.vtx_channel;
-        rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
-        rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
+        rtc6705_softspi_init(vtx6705PinConfig());
+        //current_vtx_channel = masterConfig.vtx_channel;
+        //rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
+        //rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
     }
 #endif
 

@@ -44,7 +44,6 @@
 #include "drivers/sdcard.h"
 #include "drivers/vcd.h"
 #include "drivers/max7456.h"
-#include "drivers/vtx_soft_spi_rtc6705.h"
 #include "drivers/pwm_output.h"
 #include "drivers/serial_escserial.h"
 
@@ -1630,19 +1629,6 @@ static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
             sbufReadU8(src);
         }
 #endif
-        break;
-#endif
-
-#ifdef USE_RTC6705
-    case MSP_SET_VTX_CONFIG:
-        ;
-        uint16_t tmp = sbufReadU16(src);
-        if  (tmp < 40)
-            masterConfig.vtx_channel = tmp;
-        if (current_vtx_channel != masterConfig.vtx_channel) {
-            current_vtx_channel = masterConfig.vtx_channel;
-            rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
-        }
         break;
 #endif
 

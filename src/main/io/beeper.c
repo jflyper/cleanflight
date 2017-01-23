@@ -29,7 +29,7 @@
 #include "sensors/sensors.h"
 
 #include "io/statusindicator.h"
-#include "io/vtx.h"
+#include "io/vtx_rc.h"
 
 #ifdef GPS
 #include "io/gps.h"

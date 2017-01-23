@@ -687,8 +687,8 @@ void processRx(timeUs_t currentTimeUs)
     }
 #endif
 
-#ifdef VTX
-    vtxUpdateActivatedChannel();
+#ifdef USE_VTX_RC
+    vtxRcUpdateActivatedChannel();
 #endif
 }
 

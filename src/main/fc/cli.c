@@ -66,6 +66,7 @@ uint8_t cliMode = 0;
 #include "drivers/timer.h"
 #include "drivers/vcd.h"
 #include "drivers/display.h"
+#include "drivers/vtx_common.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
@@ -88,7 +89,7 @@ uint8_t cliMode = 0;
 #include "io/osd.h"
 #include "io/serial.h"
 #include "io/servos.h"
-#include "io/vtx.h"
+#include "io/vtx_rc.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -744,7 +745,7 @@ const clivalue_t valueTable[] = {
     { "blackbox_on_motor_test",     VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP,  &blackboxConfig()->on_motor_test, .config.lookup = { TABLE_OFF_ON } },
 #endif
 
-#ifdef VTX
+#ifdef VTX_COMMON
     { "vtx_band",                   VAR_UINT8  | MASTER_VALUE,  &masterConfig.vtx_band, .config.minmax = { 1, 5 } },
     { "vtx_channel",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.vtx_channel, .config.minmax = { 1, 8 } },
     { "vtx_mode",                   VAR_UINT8  | MASTER_VALUE,  &masterConfig.vtx_mode, .config.minmax = { 0, 2 } },
@@ -2423,16 +2424,16 @@ static void cliFlashRead(char *cmdline)
 #endif
 #endif
 
-#ifdef VTX
-static void printVtx(uint8_t dumpMask, const master_t *defaultConfig)
+#ifdef USE_VTX_RC
+static void printVtxRc(uint8_t dumpMask, const master_t *defaultConfig)
 {
     // print out vtx channel settings
-    const char *format = "vtx %u %u %u %u %u %u\r\n";
+    const char *format = "vtxrc %u %u %u %u %u %u\r\n";
     bool equalsDefault = true;
     for (uint32_t i = 0; i < MAX_CHANNEL_ACTIVATION_CONDITION_COUNT; i++) {
-        const vtxChannelActivationCondition_t *cac = &masterConfig.vtxChannelActivationConditions[i];
+        const vtxRcChannelActivationCondition_t *cac = &masterConfig.vtxRcChannelActivationConditions[i];
         if (defaultConfig) {
-            const vtxChannelActivationCondition_t *cacDefault = &defaultConfig->vtxChannelActivationConditions[i];
+            const vtxRcChannelActivationCondition_t *cacDefault = &defaultConfig->vtxRcChannelActivationConditions[i];
             equalsDefault = cac->auxChannelIndex == cacDefault->auxChannelIndex
                 && cac->band == cacDefault->band
                 && cac->channel == cacDefault->channel
@@ -2458,18 +2459,26 @@ static void printVtx(uint8_t dumpMask, const master_t *defaultConfig)
     }
 }
 
-static void cliVtx(char *cmdline)
+static void cliVtxRc(char *cmdline)
 {
     int i, val = 0;
     char *ptr;
 
+    uint8_t numBand;
+    uint8_t numChannel;
+
+    if (!vtxCommonGetParam(&numBand, &numChannel, NULL, NULL, NULL, NULL)) {
+        cliPrint("No VTX device\r\n");
+        return;
+    }
+
     if (isEmpty(cmdline)) {
-        printVtx(DUMP_MASTER, NULL);
+        printVtxRc(DUMP_MASTER, NULL);
     } else {
         ptr = cmdline;
         i = atoi(ptr++);
         if (i < MAX_CHANNEL_ACTIVATION_CONDITION_COUNT) {
-            vtxChannelActivationCondition_t *cac = &masterConfig.vtxChannelActivationConditions[i];
+            vtxRcChannelActivationCondition_t *cac = &masterConfig.vtxRcChannelActivationConditions[i];
             uint8_t validArgumentCount = 0;
             ptr = nextArg(ptr);
             if (ptr) {
@@ -2482,7 +2491,7 @@ static void cliVtx(char *cmdline)
             ptr = nextArg(ptr);
             if (ptr) {
                 val = atoi(ptr);
-                if (val >= VTX_BAND_MIN && val <= VTX_BAND_MAX) {
+                if (val >= 1 && val <= numBand) {
                     cac->band = val;
                     validArgumentCount++;
                 }
@@ -2490,7 +2499,7 @@ static void cliVtx(char *cmdline)
             ptr = nextArg(ptr);
             if (ptr) {
                 val = atoi(ptr);
-                if (val >= VTX_CHANNEL_MIN && val <= VTX_CHANNEL_MAX) {
+                if (val >= 1 && val <= numChannel) {
                     cac->channel = val;
                     validArgumentCount++;
                 }
@@ -2498,7 +2507,7 @@ static void cliVtx(char *cmdline)
             ptr = processChannelRangeArgs(ptr, &cac->range, &validArgumentCount);
 
             if (validArgumentCount != 5) {
-                memset(cac, 0, sizeof(vtxChannelActivationCondition_t));
+                memset(cac, 0, sizeof(vtxRcChannelActivationCondition_t));
             }
         } else {
             cliShowArgumentRangeError("index", 0, MAX_CHANNEL_ACTIVATION_CONDITION_COUNT - 1);
@@ -3641,8 +3650,8 @@ static void printConfig(char *cmdline, bool doDiff)
         printRxRange(dumpMask, rxConfig(), &defaultConfig.rxConfig);
 
 #ifdef VTX
-        cliPrintHashLine("vtx");
-        printVtx(dumpMask, &defaultConfig);
+        cliPrintHashLine("vtxrc");
+        printVtxRc(dumpMask, &defaultConfig);
 #endif
 
         cliPrintHashLine("rxfail");
@@ -3807,8 +3816,8 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("tasks", "show task stats", NULL, cliTasks),
 #endif
     CLI_COMMAND_DEF("version", "show version", NULL, cliVersion),
-#ifdef VTX
-    CLI_COMMAND_DEF("vtx", "vtx channels on switch", NULL, cliVtx),
+#ifdef USE_VTX_RC
+    CLI_COMMAND_DEF("vtxrc", "vtx channels on switch", NULL, cliVtxRc),
 #endif
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))

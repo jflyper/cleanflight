@@ -15,16 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Touch up configuration
-
 #pragma once
 
-// Targets with built-in RTC6705 based targets
-#if defined(VTX_RTC6705_SPI) || defined(VTX_RTC6705_SOFTSPI)
-// 1. Needs gen6705 VTX_RTC6705 abstraction
-# define VTX_RTC6705
-// 2. Do not need external vtx
-# undef VTX_CONTROL
-# undef VTX_SMARTAUDIO
-# undef VTX_TRAMP
-#endif
+void rtc6705_softspi_pinConfigReset(SPIPinConfig_t *pSPIPinConfig);
+bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig);
+void rtc6705_softspi_transfer(uint8_t addr, uint32_t data);

@@ -121,4 +121,25 @@ bool vtxCommonGetPitmode(uint8_t *pOnoff)
     else
         return false;
 }
+
+bool vtxCommonGetParam(uint8_t *pNumBand, uint8_t *pNumChan, uint8_t *pNumPower, char ***pBandNames, char ***pChanNames, char ***pPowerNames)
+{
+    if (!vtxDevice)
+        return false;
+
+    if (pNumBand)
+        *pNumBand = vtxDevice->numBand;
+    if (pNumChan)
+        *pNumChan = vtxDevice->numChan;
+    if (pNumPower)
+        *pNumPower = vtxDevice->numPower;
+    if (pBandNames)
+        *pBandNames = vtxDevice->bandNames;
+    if (pChanNames)
+        *pChanNames = vtxDevice->chanNames;
+    if (pPowerNames)
+        *pPowerNames = vtxDevice->powerNames;
+
+    return true;
+}
 #endif

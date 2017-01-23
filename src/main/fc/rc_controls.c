@@ -43,7 +43,7 @@
 #include "io/gps.h"
 #include "io/beeper.h"
 #include "io/motors.h"
-#include "io/vtx.h"
+#include "io/vtx_rc.h"
 #include "io/dashboard.h"
 
 #include "sensors/barometer.h"
@@ -301,18 +301,18 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     }
 #endif
 
-#ifdef VTX
+#ifdef USE_VTX_RC
     if (rcSticks ==  THR_HI + YAW_LO + PIT_CE + ROL_HI) {
-        vtxIncrementBand();
+        vtxRcIncrementBand();
     }
     if (rcSticks ==  THR_HI + YAW_LO + PIT_CE + ROL_LO) {
-        vtxDecrementBand();
+        vtxRcDecrementBand();
     }
     if (rcSticks ==  THR_HI + YAW_HI + PIT_CE + ROL_HI) {
-        vtxIncrementChannel();
+        vtxRcIncrementChannel();
     }
     if (rcSticks ==  THR_HI + YAW_HI + PIT_CE + ROL_LO) {
-        vtxDecrementChannel();
+        vtxRcDecrementChannel();
     }
 #endif
 

@@ -15,35 +15,30 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * Originally created by S. Blakemore@IMPULSERC
+ */
 
-// Get target build configuration
+// Provides stick/switch UI for VTX configuration
+
 #include "platform.h"
 
-#ifdef VTX
+#ifdef USE_VTX_RC
 
 // Own interfaces
-#include "io/vtx.h"
-#include "io/osd.h"
+#include "io/vtx_rc.h"
 
 //External dependencies
 #include "config/config_master.h"
 #include "config/config_eeprom.h"
-#include "drivers/vtx_rtc6705.h"
+#include "drivers/vtx_common.h"
 #include "fc/runtime_config.h"
 #include "io/beeper.h"
 
-
 static uint8_t locked = 0;
 
-void vtxInit(void)
-{
-    rtc6705Init();
-    if (masterConfig.vtx_mode == 0) {
-        rtc6705SetChannel(masterConfig.vtx_band, masterConfig.vtx_channel);
-    } else if (masterConfig.vtx_mode == 1) {
-        rtc6705SetFreq(masterConfig.vtx_mhz);
-    }
-}
+static uint8_t numBand;
+static uint8_t numChannel;
 
 static void setChannelSaveAndNotify(uint8_t *bandOrChannel, uint8_t step, int32_t min, int32_t max)
 {
@@ -56,34 +51,34 @@ static void setChannelSaveAndNotify(uint8_t *bandOrChannel, uint8_t step, int32_
         temp = constrain(temp, min, max);
         *bandOrChannel = temp;
 
-        rtc6705SetChannel(masterConfig.vtx_band, masterConfig.vtx_channel);
+        vtxCommonSetBandChan(masterConfig.vtx_band, masterConfig.vtx_channel);
         writeEEPROM();
         readEEPROM();
         beeperConfirmationBeeps(temp);
     }
 }
 
-void vtxIncrementBand(void)
+void vtxRcIncrementBand(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_band), 1, RTC6705_BAND_MIN, RTC6705_BAND_MAX);
+    setChannelSaveAndNotify(&(masterConfig.vtx_band), 1, 1, numBand);
 }
 
-void vtxDecrementBand(void)
+void vtxRcDecrementBand(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_band), -1, RTC6705_BAND_MIN, RTC6705_BAND_MAX);
+    setChannelSaveAndNotify(&(masterConfig.vtx_band), -1, 1, numBand);
 }
 
-void vtxIncrementChannel(void)
+void vtxRcIncrementChannel(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_channel), 1, RTC6705_CHANNEL_MIN, RTC6705_CHANNEL_MAX);
+    setChannelSaveAndNotify(&(masterConfig.vtx_channel), 1, 1, numChannel);
 }
 
-void vtxDecrementChannel(void)
+void vtxRcDecrementChannel(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_channel), -1, RTC6705_CHANNEL_MIN, RTC6705_CHANNEL_MAX);
+    setChannelSaveAndNotify(&(masterConfig.vtx_channel), -1, 1, numChannel);
 }
 
-void vtxUpdateActivatedChannel(void)
+void vtxRcUpdateActivatedChannel(void)
 {
     if (ARMING_FLAG(ARMED)) {
         locked = 1;
@@ -94,17 +89,21 @@ void vtxUpdateActivatedChannel(void)
         uint8_t index;
 
         for (index = 0; index < MAX_CHANNEL_ACTIVATION_CONDITION_COUNT; index++) {
-            vtxChannelActivationCondition_t *vtxChannelActivationCondition = &masterConfig.vtxChannelActivationConditions[index];
+            vtxRcChannelActivationCondition_t *vtxRcChannelActivationCondition = &masterConfig.vtxRcChannelActivationConditions[index];
 
-            if (isRangeActive(vtxChannelActivationCondition->auxChannelIndex, &vtxChannelActivationCondition->range)
+            if (isRangeActive(vtxRcChannelActivationCondition->auxChannelIndex, &vtxRcChannelActivationCondition->range)
                 && index != lastIndex) {
                 lastIndex = index;
-                rtc6705SetChannel(vtxChannelActivationCondition->band, vtxChannelActivationCondition->channel);
+                vtxCommonSetBandChan(vtxRcChannelActivationCondition->band, vtxRcChannelActivationCondition->channel);
                 break;
             }
         }
     }
 }
 
+void vtxRcInit(void)
+{
+    // What if this call fail?
+    vtxCommonGetParam(&numBand, &numChannel, NULL, NULL, NULL, NULL);
+}
 #endif
-

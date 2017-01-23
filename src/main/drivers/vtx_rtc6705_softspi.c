@@ -20,14 +20,15 @@
 
 #include "platform.h"
 
-#ifdef USE_RTC6705
+#ifdef VTX_RTC6705_SOFTSPI
 
-#include "bus_spi.h"
 #include "io.h"
 #include "system.h"
-#include "light_led.h"
-
-#include "vtx_soft_spi_rtc6705.h"
+//#include "light_led.h"
+#include "bus_spi_soft.h"
+#include "bus_spi.h"
+#include "vtx_gen6705.h"
+#include "vtx_rtc6705_softspi.h"
 
 #define RTC6705_SPICLK_ON     IOHi(rtc6705ClkPin)
 #define RTC6705_SPICLK_OFF    IOLo(rtc6705ClkPin)
@@ -38,26 +39,32 @@
 #define RTC6705_SPILE_ON      IOHi(rtc6705LePin)
 #define RTC6705_SPILE_OFF     IOLo(rtc6705LePin)
 
-const uint16_t vtx_freq[] =
-{
-    5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725, // Boacam A
-    5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866, // Boscam B
-    5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945, // Boscam E
-    5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880, // FatShark
-    5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917, // RaceBand
-};
-
-uint16_t current_vtx_channel;
-
 static IO_t rtc6705DataPin = IO_NONE;
 static IO_t rtc6705LePin = IO_NONE;
 static IO_t rtc6705ClkPin = IO_NONE;
 
-void rtc6705_soft_spi_init(void)
+static void rtc6705_write_register(uint8_t addr, uint32_t data); // forward
+
+static gen6705Device_t device = {
+    .writeRegister = rtc6705_write_register,
+};
+
+void rtc6705_softspi_pinConfigReset(SPIPinConfig_t *pSPIPinConfig)
 {
-    rtc6705DataPin = IOGetByTag(IO_TAG(RTC6705_SPIDATA_PIN));
-    rtc6705LePin   = IOGetByTag(IO_TAG(RTC6705_SPILE_PIN));
-    rtc6705ClkPin  = IOGetByTag(IO_TAG(RTC6705_SPICLK_PIN));
+    pSPIPinConfig->nssTag = IO_TAG(RTC6705_SPILE_PIN);
+    pSPIPinConfig->sckTag = IO_TAG(RTC6705_SPICLK_PIN);
+    pSPIPinConfig->mosiTag = IO_TAG(RTC6705_SPIDATA_PIN);
+    pSPIPinConfig->misoTag = IO_TAG_NONE;
+}
+
+bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig)
+{
+    rtc6705DataPin = IOGetByTag(pSPIPinConfig->mosiTag);
+    rtc6705LePin   = IOGetByTag(pSPIPinConfig->nssTag);
+    rtc6705ClkPin  = IOGetByTag(pSPIPinConfig->sckTag);
+
+    if (!(rtc6705DataPin && rtc6705LePin && rtc6705ClkPin))
+        return false;
 
     IOInit(rtc6705DataPin, OWNER_SPI_MOSI, RESOURCE_SOFT_OFFSET);
     IOConfigGPIO(rtc6705DataPin, IOCFG_OUT_PP);
@@ -67,6 +74,10 @@ void rtc6705_soft_spi_init(void)
 
     IOInit(rtc6705ClkPin, OWNER_SPI_SCK, RESOURCE_SOFT_OFFSET);
     IOConfigGPIO(rtc6705ClkPin, IOCFG_OUT_PP);
+
+    gen6705RegisterDevice(&device);
+
+    return true;
 }
 
 static void rtc6705_write_register(uint8_t addr, uint32_t data)
@@ -106,24 +117,4 @@ static void rtc6705_write_register(uint8_t addr, uint32_t data)
     }
     RTC6705_SPILE_ON;
 }
-
-
-void rtc6705_soft_spi_set_channel(uint16_t channel_freq)
-{
-
-    uint32_t freq = (uint32_t)channel_freq * 1000;
-    uint32_t N, A;
-
-    freq /= 40;
-    N = freq / 64;
-    A = freq % 64;
-    rtc6705_write_register(0, 400);
-    rtc6705_write_register(1, (N << 7) | A);
-}
-
-void rtc6705_soft_spi_set_rf_power(uint8_t reduce_power)
-{
-    rtc6705_write_register(7, (reduce_power ? (PA_CONTROL_DEFAULT | PD_Q5G_MASK) & (~(PA5G_PW_MASK | PA5G_BS_MASK)) : PA_CONTROL_DEFAULT));
-}
-
 #endif

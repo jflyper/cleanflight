@@ -81,3 +81,6 @@ void vtxCommonSetPitmode(uint8_t onoff);
 bool vtxCommonGetBandChan(uint8_t *pBand, uint8_t *pChan);
 bool vtxCommonGetPowerIndex(uint8_t *pIndex);
 bool vtxCommonGetPitmode(uint8_t *pOnoff);
+
+// V1.1 API
+bool vtxCommonGetParam(uint8_t *pNumBand, uint8_t *pNumChan, uint8_t *pNumPower, char ***pBandNames, char ***pChanNames, char ***pPowerNames);

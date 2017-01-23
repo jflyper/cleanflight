@@ -85,6 +85,13 @@ typedef struct SPIDevice_s {
 #endif
 } spiDevice_t;
 
+typedef struct SPIPinConfig_s {
+    ioTag_t sckTag;
+    ioTag_t mosiTag;
+    ioTag_t misoTag;
+    ioTag_t nssTag;
+} SPIPinConfig_t;
+
 bool spiInit(SPIDevice device);
 void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor);
 uint8_t spiTransferByte(SPI_TypeDef *instance, uint8_t in);

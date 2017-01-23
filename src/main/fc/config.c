@@ -72,7 +72,7 @@
 #include "io/ledstrip.h"
 #include "io/gps.h"
 #include "io/osd.h"
-#include "io/vtx.h"
+#include "io/vtx_rc.h"
 
 #include "rx/rx.h"
 #include "rx/rx_spi.h"
@@ -811,7 +811,7 @@ void createDefaultConfig(master_t *config)
         config->customMotorMixer[i].throttle = 0.0f;
     }
 
-#ifdef VTX
+#ifdef VTX_RTC6705_SPI
     config->vtx_band = 4;    //Fatshark/Airwaves
     config->vtx_channel = 1; //CH1
     config->vtx_mode = 0;    //CH+BAND mode

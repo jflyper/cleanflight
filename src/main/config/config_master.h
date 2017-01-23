@@ -26,6 +26,7 @@
 #include "cms/cms.h"
 
 #include "drivers/adc.h"
+#include "drivers/bus_spi.h"
 #include "drivers/rx_pwm.h"
 #include "drivers/sound_beeper.h"
 #include "drivers/sonar_hcsr04.h"
@@ -50,7 +51,7 @@
 #include "io/gps.h"
 #include "io/osd.h"
 #include "io/ledstrip.h"
-#include "io/vtx.h"
+#include "io/vtx_rc.h"
 
 #include "rx/rx.h"
 
@@ -109,6 +110,7 @@
 #define displayPortProfileMsp(x) (&masterConfig.displayPortProfileMsp)
 #define displayPortProfileMax7456(x) (&masterConfig.displayPortProfileMax7456)
 #define displayPortProfileOled(x) (&masterConfig.displayPortProfileOled)
+#define vtx6705PinConfig(x) (&masterConfig.vtx6705PinConfig)
 
 // System-wide
 typedef struct master_s {
@@ -203,11 +205,6 @@ typedef struct master_s {
     uint8_t transponderData[6];
 #endif
 
-#if defined(USE_RTC6705)
-    uint8_t vtx_channel;
-    uint8_t vtx_power;
-#endif
-
 #ifdef OSD
     osd_profile_t osdProfile;
 #endif
@@ -232,13 +229,25 @@ typedef struct master_s {
 
     modeActivationProfile_t modeActivationProfile;
     adjustmentProfile_t adjustmentProfile;
-#ifdef VTX
+
+#if defined(VTX_RTC6705_SPI) || defined(VTX_RTC6705_SOFTSPI)
+    SPIPinConfig_t vtx6705PinConfig;
+#endif
+
+#ifdef VTX_RTC6705_SOFTSPI // XXX Consolidate
+    uint8_t vtx_sirin_channel;
+    uint8_t vtx_sirin_power;
+#endif
+
+#ifdef USE_VTX_RC // XXX Not really USE_VTX_RC... should reorganize
+    uint8_t vtx_mode; //0=ch+band 1=mhz
     uint8_t vtx_band; //1=A, 2=B, 3=E, 4=F(Airwaves/Fatshark), 5=Raceband
     uint8_t vtx_channel; //1-8
-    uint8_t vtx_mode; //0=ch+band 1=mhz
     uint16_t vtx_mhz; //5740
+#endif
 
-    vtxChannelActivationCondition_t vtxChannelActivationConditions[MAX_CHANNEL_ACTIVATION_CONDITION_COUNT];
+#ifdef USE_VTX_RC
+    vtxRcChannelActivationCondition_t vtxRcChannelActivationConditions[MAX_CHANNEL_ACTIVATION_CONDITION_COUNT];
 #endif
 
 #ifdef BLACKBOX

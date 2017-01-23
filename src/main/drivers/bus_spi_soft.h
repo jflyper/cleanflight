@@ -23,6 +23,7 @@ typedef enum softSPIDevice {
     SOFT_SPIDEV_1   = 0
 } softSPIDevice_e;
 
+// XXX Consolidate with SPIPinConfig_{s,t}
 typedef struct softSPIDevice_s {
     ioTag_t sckTag;
     ioTag_t mosiTag;

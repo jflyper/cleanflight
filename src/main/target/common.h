@@ -107,6 +107,7 @@
 #define VTX_CONTROL
 #define VTX_SMARTAUDIO
 #define VTX_TRAMP
+#define USE_VTX_RC
 #define USE_SENSOR_NAMES
 #else
 #define SKIP_CLI_COMMAND_HELP
