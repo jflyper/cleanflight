@@ -35,9 +35,9 @@ typedef struct vtxRcChannelActivationCondition_s {
     channelRange_t range;
 } vtxRcChannelActivationCondition_t;
 
+void vtxRcInit(void);
 void vtxRcIncrementBand(void);
 void vtxRcDecrementBand(void);
 void vtxRcIncrementChannel(void);
 void vtxRcDecrementChannel(void);
 void vtxRcUpdateActivatedChannel(void);
-

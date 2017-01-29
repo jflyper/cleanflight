@@ -35,7 +35,7 @@
 
 #ifdef CMS
 
-#if defined(VTX) || defined(USE_RTC6705)
+#ifdef VTX_RTC6705
 
 static bool featureRead = false;
 static uint8_t cmsx_featureVtx = 0, cmsx_vtxBand, cmsx_vtxChannel;
@@ -115,10 +115,10 @@ static long cmsx_Vtx_onExit(const OSD_Entry *self)
     return 0;
 }
 
-#ifdef VTX
 static OSD_UINT8_t entryVtxMode =  {&masterConfig.vtx_mode, 0, 2, 1};
 static OSD_UINT16_t entryVtxMhz =  {&masterConfig.vtx_mhz, 5600, 5950, 1};
-#endif // VTX
+
+#warning XXX VTX and USE_RTC6705 are obsolete; fix this menu 
 
 static OSD_Entry cmsx_menuVtxEntries[] =
 {
@@ -145,6 +145,6 @@ CMS_Menu cmsx_menuVtx = {
     .onGlobalExit = cmsx_Vtx_FeatureWriteback,
     .entries = cmsx_menuVtxEntries
 };
+#endif // VTX_RTC6705
 
-#endif // VTX || USE_RTC6705
 #endif // CMS

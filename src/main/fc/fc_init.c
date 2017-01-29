@@ -346,10 +346,6 @@ void init(void)
     updateHardwareRevision();
 #endif
 
-#ifdef VTX_RTC6705_SPI
-    rtc6705_spi_init();
-#endif
-
 #if defined(SONAR_SOFTSERIAL2_EXCLUSIVE) && defined(SONAR) && defined(USE_SOFTSERIAL2)
     if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
         serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
@@ -372,6 +368,24 @@ void init(void)
 
     initBoardAlignment(boardAlignment());
 
+#ifdef VTX_RTC6705_SOFTSPI
+    rtc6705_softspi_init(vtx6705PinConfig());
+    //current_vtx_channel = masterConfig.vtx_channel;
+    //rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
+    //rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
+#endif
+
+#ifdef VTX_RTC6705_SPI
+    // XXX Switch to configurable SPI resource handling when it become available.
+    rtc6705_spi_init();
+#endif
+
+#ifdef USE_VTX_RC
+    if (feature(FEATURE_VTX)) {
+        vtxRcInit();
+    }
+#endif
+
 #ifdef CMS
     cmsInit();
 #endif
@@ -383,11 +397,18 @@ void init(void)
 #endif
 
 #ifdef VTX_RTC6705_SOFTSPI
+    rtc6705_softspi_init(vtx6705PinConfig());
+    //current_vtx_channel = masterConfig.vtx_channel;
+    //rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
+    //rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
+#endif
+
+#ifdef VTX_RTC6705_SPI
+    rtc6705_spi_init();
+#endif
+
+#ifdef USE_VTX_RC
     if (feature(FEATURE_VTX)) {
-        rtc6705_softspi_init(vtx6705PinConfig());
-        //current_vtx_channel = masterConfig.vtx_channel;
-        //rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
-        //rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
     }
 #endif
 

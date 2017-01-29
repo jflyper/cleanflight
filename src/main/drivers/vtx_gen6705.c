@@ -24,6 +24,7 @@
 
 #include "io/vtx_string.h"
 #include "drivers/vtx_gen6705.h"
+#include "drivers/vtx_common.h"
 
 #include "bus_spi.h"
 #include "io.h"
@@ -59,6 +60,10 @@ void gen6705SetFreq(uint16_t channel_freq)
 
 void gen6705SetBandChan(uint8_t band, uint8_t chan)
 {
+    if (band < 1 || band > 5 || chan < 1 || chan > 8)
+        return;
+
+    gen6705SetFreq(vtx58FreqTable[band - 1][chan - 1]);
 }
 
 #if 0
@@ -68,4 +73,19 @@ void gen6705SetRFPower(uint8_t reduce_power)
 }
 #endif
 
+#if 0
+static vtxVTable_t gen6705VTable = {
+    .process = NULL,
+    .getDeviceType = gen6705GetDeviceType,
+    .isReady = gen6705IsReady,
+    .setBandChan = gen6705SetBandChan,
+    .setPowerByIndex = gen6705SetPowerByIndex,
+    .setPitmode = gen6705SetPitmode,
+    .getBandChan = gen6705GetBandChan,
+    .getPowerIndex = gen6705GetPowerIndex,
+    .getPitmode = gen6705GetPitmode,
+};
 #endif
+
+#endif
+
