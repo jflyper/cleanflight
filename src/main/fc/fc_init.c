@@ -380,6 +380,10 @@ void init(void)
     rtc6705_spi_init();
 #endif
 
+#ifdef VTX_GEN6705
+    gen6705Init(gen6705Config());
+#endif
+
 #ifdef USE_VTX_RC
     if (feature(FEATURE_VTX)) {
         vtxRcInit();

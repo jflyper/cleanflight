@@ -160,6 +160,14 @@
 #define VBAT_ADC_PIN            PC2
 //#define RSSI_ADC_PIN            PA0
 
+#undef VTX_SMARTAUDIO
+#undef VTX_TRAMP
+#define VTX_GEN6705
+#define VTX_RTC6705_SOFTSPI
+#define RTC6705_SPIDATA_PIN     PB15 // S2_IN
+#define RTC6705_SPILE_PIN       PA1  // S5_IN
+#define RTC6705_SPICLK_PIN      PA8  // S6_IN
+
 #define USE_ESC_SENSOR
 
 #define LED_STRIP

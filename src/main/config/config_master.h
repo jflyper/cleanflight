@@ -35,6 +35,7 @@
 #include "drivers/light_led.h"
 #include "drivers/flash.h"
 #include "drivers/display.h"
+#include "drivers/vtx_gen6705.h"
 
 #include "fc/rc_controls.h"
 
@@ -111,6 +112,7 @@
 #define displayPortProfileMax7456(x) (&masterConfig.displayPortProfileMax7456)
 #define displayPortProfileOled(x) (&masterConfig.displayPortProfileOled)
 #define vtx6705PinConfig(x) (&masterConfig.vtx6705PinConfig)
+#define gen6705Config(x) (&masterConfig.gen6705Config)
 
 // System-wide
 typedef struct master_s {
@@ -244,6 +246,10 @@ typedef struct master_s {
     uint8_t vtx_band; //1=A, 2=B, 3=E, 4=F(Airwaves/Fatshark), 5=Raceband
     uint8_t vtx_channel; //1-8
     uint16_t vtx_mhz; //5740
+#endif
+
+#ifdef VTX_GEN6705
+    gen6705Config_t gen6705Config;
 #endif
 
 #ifdef USE_VTX_RC

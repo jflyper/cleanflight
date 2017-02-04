@@ -57,6 +57,7 @@
 #include "drivers/system.h"
 #include "drivers/timer.h"
 #include "drivers/vcd.h"
+#include "drivers/vtx_gen6705.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
@@ -816,11 +817,15 @@ void createDefaultConfig(master_t *config)
         config->customMotorMixer[i].throttle = 0.0f;
     }
 
-#ifdef VTX_RTC6705_SPI
+#ifdef VTX_RTC6705_SPI // XXX Consolidate
     config->vtx_band = 4;    //Fatshark/Airwaves
     config->vtx_channel = 1; //CH1
     config->vtx_mode = 0;    //CH+BAND mode
     config->vtx_mhz = 5740;  //F0
+#endif
+
+#ifdef VTX_GEN6705
+    gen6705ConfigReset(gen6705Config());
 #endif
 
 #ifdef TRANSPONDER

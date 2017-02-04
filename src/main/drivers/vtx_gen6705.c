@@ -22,6 +22,8 @@
 
 #ifdef VTX_RTC6705
 
+#include "build/debug.h"
+
 #include "io/vtx_string.h"
 #include "drivers/vtx_gen6705.h"
 #include "drivers/vtx_common.h"
@@ -31,9 +33,7 @@
 
 gen6705Device_t *pDevice = NULL;
 
-void gen6705Init(void)
-{
-}
+// Downward API
 
 void gen6705RegisterDevice(gen6705Device_t *pGen6705Device)
 {
@@ -46,7 +46,41 @@ static void gen6705WriteRegister(uint8_t addr, uint32_t data)
         (*pDevice->writeRegister)(addr, data);
 }
 
-void gen6705SetFreq(uint16_t channel_freq)
+// Upward API
+
+static vtxVTable_t gen6705VTable;
+static gen6705Config_t *pConfig;
+
+static char *gen6705PowerNames[] = {
+    "MIN",
+    "LOW",
+    "MID",
+    "HIGH"
+};
+
+static vtxDevice_t gen6705Device = {
+    .vTable = &gen6705VTable,
+
+    .numBand = 5,
+    .numChan = 8,
+    .numPower = 4,
+
+    .bandNames = (char **)vtx58BandNames,
+    .chanNames = (char **)vtx58ChannelNames,
+    .powerNames = (char **)gen6705PowerNames,
+};
+
+static bool gen6705IsReady(void)
+{
+    return true;
+}
+
+static vtxDevType_e gen6705GetDeviceType(void)
+{
+    return VTXDEV_GEN6705;
+}
+
+static void gen6705SetFreq(uint16_t channel_freq)
 {
     uint32_t freq = (uint32_t)channel_freq * 1000;
     uint32_t N, A;
@@ -58,7 +92,7 @@ void gen6705SetFreq(uint16_t channel_freq)
     gen6705WriteRegister(1, (N << 7) | A);
 }
 
-void gen6705SetBandChan(uint8_t band, uint8_t chan)
+static void gen6705SetBandChan(uint8_t band, uint8_t chan)
 {
     if (band < 1 || band > 5 || chan < 1 || chan > 8)
         return;
@@ -66,26 +100,55 @@ void gen6705SetBandChan(uint8_t band, uint8_t chan)
     gen6705SetFreq(vtx58FreqTable[band - 1][chan - 1]);
 }
 
+static bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
+{
+    *pBand = gen6705Device.curBand;
+    *pChan = gen6705Device.curChan;
+
+    return true;
+}
+
+void gen6705Init(gen6705Config_t *pConfigToUse)
+{
+    pConfig = pConfigToUse;
+
+    // Initialize RTC6705 according to stored memory.
+
+    gen6705SetBandChan(pConfig->band, pConfig->chan);
+
+    gen6705Device.curBand = pConfig->band;
+    gen6705Device.curChan = pConfig->chan;
+
+    vtxCommonRegisterDevice(&gen6705Device);
+
+debug[3] = 20;
+}
+
+void gen6705ConfigReset(gen6705Config_t *pConfigToReset)
+{
+    pConfigToReset->band = 1;
+    pConfigToReset->chan = 1;
+debug[4] = 10;
+}
+
 #if 0
+// This one is from SIRINFPV
 void gen6705SetRFPower(uint8_t reduce_power)
 {
     rtc6705_write_register(7, (reduce_power ? (PA_CONTROL_DEFAULT | PD_Q5G_MASK) & (~(PA5G_PW_MASK | PA5G_BS_MASK)) : PA_CONTROL_DEFAULT));
 }
 #endif
 
-#if 0
 static vtxVTable_t gen6705VTable = {
     .process = NULL,
     .getDeviceType = gen6705GetDeviceType,
     .isReady = gen6705IsReady,
     .setBandChan = gen6705SetBandChan,
-    .setPowerByIndex = gen6705SetPowerByIndex,
-    .setPitmode = gen6705SetPitmode,
+    //.setPowerByIndex = gen6705SetPowerByIndex,
+    //.setPitmode = gen6705SetPitmode,
     .getBandChan = gen6705GetBandChan,
-    .getPowerIndex = gen6705GetPowerIndex,
-    .getPitmode = gen6705GetPitmode,
+    //.getPowerIndex = gen6705GetPowerIndex,
+    //.getPitmode = gen6705GetPitmode,
 };
-#endif
-
 #endif
 

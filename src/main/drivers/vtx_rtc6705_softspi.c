@@ -22,6 +22,8 @@
 
 #ifdef VTX_RTC6705_SOFTSPI
 
+#include "build/debug.h"
+
 #include "io.h"
 #include "system.h"
 //#include "light_led.h"
@@ -82,6 +84,10 @@ bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig)
 
 static void rtc6705_write_register(uint8_t addr, uint32_t data)
 {
+debug[0] = addr;
+debug[1] = (int16_t)(data >> 16);
+debug[2] = (int16_t)data;
+
     uint8_t i;
 
     RTC6705_SPILE_OFF;
