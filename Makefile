@@ -655,7 +655,6 @@ HIGHEND_SRC = \
             drivers/serial_softserial.c \
             drivers/sonar_hcsr04.c \
             drivers/vtx_common.c \
-            drivers/vtx_gen6705.c \
             flight/navigation.c \
             flight/gps_conversion.c \
             io/dashboard.c \
@@ -665,6 +664,7 @@ HIGHEND_SRC = \
             io/gps.c \
             io/ledstrip.c \
             io/osd.c \
+            io/vtx_gen6705.c \
             sensors/sonar.c \
             sensors/barometer.c \
             telemetry/telemetry.c \
@@ -754,11 +754,11 @@ SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
 SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             drivers/serial_escserial.c \
             drivers/vtx_common.c \
-            drivers/vtx_gen6705.c \
             io/cli.c \
             io/serial_4way.c \
             io/serial_4way_avrootloader.c \
             io/serial_4way_stk500v2.c \
+            io/vtx_gen6705.c \
             msp/msp_serial.c \
             cms/cms.c \
             cms/cms_menu_blackbox.c \

@@ -24,13 +24,13 @@
 
 #include "build/debug.h"
 
-#include "io.h"
-#include "system.h"
-//#include "light_led.h"
-#include "bus_spi_soft.h"
-#include "bus_spi.h"
-#include "vtx_gen6705.h"
-#include "vtx_rtc6705_softspi.h"
+#include "io/vtx_gen6705.h"
+
+#include "drivers/io.h"
+#include "drivers/system.h"
+#include "drivers/bus_spi_soft.h"
+#include "drivers/bus_spi.h"
+#include "drivers/vtx_rtc6705_softspi.h"
 
 #define RTC6705_SPICLK_ON     IOHi(rtc6705ClkPin)
 #define RTC6705_SPICLK_OFF    IOLo(rtc6705ClkPin)
@@ -84,9 +84,11 @@ bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig)
 
 static void rtc6705_write_register(uint8_t addr, uint32_t data)
 {
+#if 0
 debug[0] = addr;
 debug[1] = (int16_t)(data >> 16);
 debug[2] = (int16_t)data;
+#endif
 
     uint8_t i;
 

@@ -57,7 +57,6 @@
 #include "drivers/system.h"
 #include "drivers/timer.h"
 #include "drivers/vcd.h"
-#include "drivers/vtx_gen6705.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
@@ -80,6 +79,7 @@
 #include "io/osd.h"
 #include "io/serial.h"
 #include "io/servos.h"
+#include "io/vtx_gen6705.h"
 #include "io/vtx_rc.h"
 
 #include "rx/rx.h"

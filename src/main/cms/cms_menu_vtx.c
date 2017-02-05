@@ -43,7 +43,7 @@ static uint8_t cmsx_featureVtx = 0, cmsx_vtxBand, cmsx_vtxChannel;
 static long cmsx_Vtx_FeatureRead(void)
 {
     if (!featureRead) {
-        cmsx_featureVtx = feature(FEATURE_VTX) ? 1 : 0;
+        cmsx_featureVtx = feature(FEATURE_VTXRC) ? 1 : 0;
         featureRead = true;
     }
 
@@ -54,9 +54,9 @@ static long cmsx_Vtx_FeatureWriteback(void)
 {
     if (featureRead) {
         if (cmsx_featureVtx)
-            featureSet(FEATURE_VTX);
+            featureSet(FEATURE_VTXRC);
         else
-            featureClear(FEATURE_VTX);
+            featureClear(FEATURE_VTXRC);
     }
 
     return 0;

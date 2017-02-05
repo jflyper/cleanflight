@@ -71,7 +71,6 @@ uint8_t cliMode = 0;
 #include "drivers/vcd.h"
 #include "drivers/display.h"
 #include "drivers/vtx_common.h"
-#include "drivers/vtx_gen6705.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
@@ -94,6 +93,7 @@ uint8_t cliMode = 0;
 #include "io/osd.h"
 #include "io/serial.h"
 #include "io/servos.h"
+#include "io/vtx_gen6705.h"
 #include "io/vtx_rc.h"
 
 #include "rx/rx.h"
@@ -140,7 +140,7 @@ static const char * const featureNames[] = {
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "OSD",
     "BLACKBOX", "CHANNEL_FORWARDING", "TRANSPONDER", "AIRMODE",
-    "SDCARD", "VTX", "RX_SPI", "SOFTSPI", "ESC_SENSOR", NULL
+    "SDCARD", "VTXRC", "RX_SPI", "SOFTSPI", "ESC_SENSOR", NULL
 };
 
 // sync this with rxFailsafeChannelMode_e

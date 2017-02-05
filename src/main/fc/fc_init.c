@@ -384,12 +384,6 @@ void init(void)
     gen6705Init(gen6705Config());
 #endif
 
-#ifdef USE_VTX_RC
-    if (feature(FEATURE_VTX)) {
-        vtxRcInit();
-    }
-#endif
-
 #ifdef CMS
     cmsInit();
 #endif
@@ -412,7 +406,8 @@ void init(void)
 #endif
 
 #ifdef USE_VTX_RC
-    if (feature(FEATURE_VTX)) {
+    if (feature(FEATURE_VTXRC)) {
+        vtxRcInit();
     }
 #endif
 

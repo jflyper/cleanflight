@@ -24,12 +24,14 @@
 
 #include "build/debug.h"
 
-#include "io/vtx_string.h"
-#include "drivers/vtx_gen6705.h"
-#include "drivers/vtx_common.h"
+#include "fc/config.h"
 
-#include "bus_spi.h"
-#include "io.h"
+#include "io/vtx_string.h"
+#include "io/vtx_gen6705.h"
+
+#include "drivers/vtx_common.h"
+#include "drivers/bus_spi.h"
+#include "drivers/io.h"
 
 gen6705Device_t *pDevice = NULL;
 
@@ -94,10 +96,20 @@ static void gen6705SetFreq(uint16_t channel_freq)
 
 static void gen6705SetBandChan(uint8_t band, uint8_t chan)
 {
-    if (band < 1 || band > 5 || chan < 1 || chan > 8)
+    debug[0]++;
+    debug[1] = band;
+    debug[2] = chan;
+
+    if (band < 1 || band > gen6705Device.numBand || chan < 1 || chan > gen6705Device.numChan)
         return;
 
     gen6705SetFreq(vtx58FreqTable[band - 1][chan - 1]);
+
+    gen6705Device.curBand = band;
+    gen6705Device.curChan = chan;
+
+    writeEEPROM();
+    readEEPROM();
 }
 
 static bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
@@ -120,15 +132,12 @@ void gen6705Init(gen6705Config_t *pConfigToUse)
     gen6705Device.curChan = pConfig->chan;
 
     vtxCommonRegisterDevice(&gen6705Device);
-
-debug[3] = 20;
 }
 
 void gen6705ConfigReset(gen6705Config_t *pConfigToReset)
 {
     pConfigToReset->band = 1;
     pConfigToReset->chan = 1;
-debug[4] = 10;
 }
 
 #if 0

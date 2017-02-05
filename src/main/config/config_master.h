@@ -35,7 +35,6 @@
 #include "drivers/light_led.h"
 #include "drivers/flash.h"
 #include "drivers/display.h"
-#include "drivers/vtx_gen6705.h"
 
 #include "fc/rc_controls.h"
 
@@ -53,6 +52,7 @@
 #include "io/osd.h"
 #include "io/ledstrip.h"
 #include "io/vtx_rc.h"
+#include "io/vtx_gen6705.h"
 
 #include "rx/rx.h"
 

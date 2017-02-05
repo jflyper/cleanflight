@@ -25,6 +25,8 @@
 
 #ifdef USE_VTX_RC
 
+#include "build/debug.h"
+
 // Own interfaces
 #include "io/vtx_rc.h"
 
@@ -40,13 +42,24 @@ static uint8_t locked = 0;
 static uint8_t numBand;
 static uint8_t numChannel;
 
+static uint8_t curBand;
+static uint8_t curChan;
+
+static uint8_t reqBand;
+static uint8_t reqChan;
+
+#if 0
 static void setChannelSaveAndNotify(uint8_t *bandOrChannel, uint8_t step, int32_t min, int32_t max)
 {
     if (ARMING_FLAG(ARMED)) {
+        // Once armed, there will be no changes to VTX.
         locked = 1;
     }
 
-    if (masterConfig.vtx_mode == 0 && !locked) {
+#warning XXX Handle SINGULARITY vtx_mode correctly
+    //if (masterConfig.vtx_mode == 0 && !locked)
+    if (!locked)
+    {
         uint8_t temp = (*bandOrChannel) + step;
         temp = constrain(temp, min, max);
         *bandOrChannel = temp;
@@ -57,25 +70,62 @@ static void setChannelSaveAndNotify(uint8_t *bandOrChannel, uint8_t step, int32_
         beeperConfirmationBeeps(temp);
     }
 }
+#endif
+
+static void vtxRcChangeBand(int delta)
+{
+    if (!vtxCommonGetBandChan(&curBand, &curChan))
+        return;
+
+    reqBand = constrain(curBand + delta, 1, numBand);
+
+    vtxCommonSetBandChan(reqBand, curChan);
+
+    if (!vtxCommonGetBandChan(&curBand, &curChan))
+        return;
+
+    if (curBand != reqBand)
+        return;
+
+    beeperConfirmationBeeps(curBand);
+}
+
+static void vtxRcChangeChan(int delta)
+{
+    if (!vtxCommonGetBandChan(&curBand, &curChan))
+        return;
+
+    reqChan = constrain(curChan + delta, 1, numChannel);
+
+    vtxCommonSetBandChan(curBand, reqChan);
+
+    if (!vtxCommonGetBandChan(&curBand, &curChan))
+        return;
+
+    if (curChan != reqChan)
+        return;
+
+    beeperConfirmationBeeps(curChan);
+}
 
 void vtxRcIncrementBand(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_band), 1, 1, numBand);
+    vtxRcChangeBand(1);
 }
 
 void vtxRcDecrementBand(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_band), -1, 1, numBand);
+    vtxRcChangeBand(-1);
 }
 
 void vtxRcIncrementChannel(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_channel), 1, 1, numChannel);
+    vtxRcChangeChan(1);
 }
 
 void vtxRcDecrementChannel(void)
 {
-    setChannelSaveAndNotify(&(masterConfig.vtx_channel), -1, 1, numChannel);
+    vtxRcChangeChan(-1);
 }
 
 void vtxRcUpdateActivatedChannel(void)
@@ -84,10 +134,12 @@ void vtxRcUpdateActivatedChannel(void)
         locked = 1;
     }
 
-    if (masterConfig.vtx_mode == 2 && !locked) {
+#warning XXX Handle SINGULARITY vtx_mode correctly
+    // if (masterConfig.vtx_mode == 2 && !locked)
+    if (!locked)
+    {
         static uint8_t lastIndex = -1;
         uint8_t index;
-
         for (index = 0; index < MAX_CHANNEL_ACTIVATION_CONDITION_COUNT; index++) {
             vtxRcChannelActivationCondition_t *vtxRcChannelActivationCondition = &masterConfig.vtxRcChannelActivationConditions[index];
 
