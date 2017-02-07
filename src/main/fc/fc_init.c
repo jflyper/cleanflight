@@ -368,6 +368,8 @@ void init(void)
 
     initBoardAlignment(boardAlignment());
 
+// VTX system initialization
+
 #ifdef VTX_RTC6705_SOFTSPI
     rtc6705_softspi_init(vtx6705PinConfig());
     //current_vtx_channel = masterConfig.vtx_channel;
@@ -384,6 +386,24 @@ void init(void)
     gen6705Init(gen6705Config());
 #endif
 
+#ifdef VTX_CONTROL
+#  ifdef VTX_SMARTAUDIO
+    smartAudioInit();
+#  endif
+
+#  ifdef VTX_TRAMP
+    trampInit();
+#  endif
+#endif // VTX_CONTROL
+
+#ifdef USE_VTX_RC
+    if (feature(FEATURE_VTXRC)) {
+        vtxRcInit();
+    }
+#endif
+
+// End of VTX system initialization
+
 #ifdef CMS
     cmsInit();
 #endif
@@ -391,23 +411,6 @@ void init(void)
 #ifdef USE_DASHBOARD
     if (feature(FEATURE_DASHBOARD)) {
         dashboardInit(rxConfig());
-    }
-#endif
-
-#ifdef VTX_RTC6705_SOFTSPI
-    rtc6705_softspi_init(vtx6705PinConfig());
-    //current_vtx_channel = masterConfig.vtx_channel;
-    //rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
-    //rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
-#endif
-
-#ifdef VTX_RTC6705_SPI
-    rtc6705_spi_init();
-#endif
-
-#ifdef USE_VTX_RC
-    if (feature(FEATURE_VTXRC)) {
-        vtxRcInit();
     }
 #endif
 
@@ -544,18 +547,6 @@ void init(void)
 #ifdef BARO
     baroSetCalibrationCycles(CALIBRATING_BARO_CYCLES);
 #endif
-
-#ifdef VTX_CONTROL
-
-#ifdef VTX_SMARTAUDIO
-    smartAudioInit();
-#endif
-
-#ifdef VTX_TRAMP
-    trampInit();
-#endif
-
-#endif // VTX_CONTROL
 
     // start all timers
     // TODO - not implemented yet
