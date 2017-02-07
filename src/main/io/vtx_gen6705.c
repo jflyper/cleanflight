@@ -82,7 +82,7 @@ static vtxDevType_e gen6705GetDeviceType(void)
     return VTXDEV_GEN6705;
 }
 
-static void gen6705SetFreq(uint16_t channel_freq)
+void gen6705SetFreq(uint16_t channel_freq)
 {
     uint32_t freq = (uint32_t)channel_freq * 1000;
     uint32_t N, A;
@@ -94,7 +94,7 @@ static void gen6705SetFreq(uint16_t channel_freq)
     gen6705WriteRegister(1, (N << 7) | A);
 }
 
-static void gen6705SetBandChan(uint8_t band, uint8_t chan)
+void gen6705SetBandChan(uint8_t band, uint8_t chan)
 {
     debug[0]++;
     debug[1] = band;
@@ -108,11 +108,14 @@ static void gen6705SetBandChan(uint8_t band, uint8_t chan)
     gen6705Device.curBand = band;
     gen6705Device.curChan = chan;
 
+    pConfig->band = band;
+    pConfig->chan = chan;
+
     writeEEPROM();
     readEEPROM();
 }
 
-static bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
+bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
 {
     *pBand = gen6705Device.curBand;
     *pChan = gen6705Device.curChan;

@@ -93,7 +93,8 @@ debug[2] = (int16_t)data;
     uint8_t i;
 
     RTC6705_SPILE_OFF;
-    delay(1);
+    delayMicroseconds(1);
+
     // send address
     for (i=0; i<4; i++) {
         if ((addr >> i) & 1)
@@ -102,27 +103,31 @@ debug[2] = (int16_t)data;
             RTC6705_SPIDATA_OFF;
 
         RTC6705_SPICLK_ON;
-        delay(1);
+        delayMicroseconds(1);
         RTC6705_SPICLK_OFF;
-        delay(1);
+        delayMicroseconds(1);
     }
-    // Write bit
 
+    // send write bit
     RTC6705_SPIDATA_ON;
+    delayMicroseconds(1);
     RTC6705_SPICLK_ON;
-    delay(1);
+    delayMicroseconds(1);
     RTC6705_SPICLK_OFF;
-    delay(1);
+
+    // send register bits
+    delayMicroseconds(1);
     for (i=0; i<20; i++) {
         if ((data >> i) & 1)
             RTC6705_SPIDATA_ON;
         else
             RTC6705_SPIDATA_OFF;
         RTC6705_SPICLK_ON;
-        delay(1);
+        delayMicroseconds(1);
         RTC6705_SPICLK_OFF;
-        delay(1);
+        delayMicroseconds(1);
     }
+
     RTC6705_SPILE_ON;
 }
 #endif

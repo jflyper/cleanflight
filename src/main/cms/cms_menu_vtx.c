@@ -23,27 +23,33 @@
 
 #include "build/version.h"
 
+#include "build/debug.h"
+
 #include "cms/cms.h"
 #include "cms/cms_types.h"
 #include "cms/cms_menu_vtx.h"
 
 #include "common/utils.h"
+#include "common/printf.h"
 
 #include "config/config_profile.h"
 #include "config/config_master.h"
 #include "config/feature.h"
 
+#include "io/vtx_string.h"
+#include "io/vtx_gen6705.h"
+
 #ifdef CMS
 
-#ifdef VTX_RTC6705
+#ifdef VTX_GEN6705
 
 static bool featureRead = false;
-static uint8_t cmsx_featureVtx = 0, cmsx_vtxBand, cmsx_vtxChannel;
+static uint8_t cmsx_featureVtxRc = 0, cmsx_vtxBand, cmsx_vtxChannel;
 
 static long cmsx_Vtx_FeatureRead(void)
 {
     if (!featureRead) {
-        cmsx_featureVtx = feature(FEATURE_VTXRC) ? 1 : 0;
+        cmsx_featureVtxRc = feature(FEATURE_VTXRC) ? 1 : 0;
         featureRead = true;
     }
 
@@ -53,7 +59,7 @@ static long cmsx_Vtx_FeatureRead(void)
 static long cmsx_Vtx_FeatureWriteback(void)
 {
     if (featureRead) {
-        if (cmsx_featureVtx)
+        if (cmsx_featureVtxRc)
             featureSet(FEATURE_VTXRC);
         else
             featureClear(FEATURE_VTXRC);
@@ -98,14 +104,6 @@ static void cmsx_Vtx_ConfigWriteback(void)
 #endif // USE_RTC6705
 }
 
-static long cmsx_Vtx_onEnter(void)
-{
-    cmsx_Vtx_FeatureRead();
-    cmsx_Vtx_ConfigRead();
-
-    return 0;
-}
-
 static long cmsx_Vtx_onExit(const OSD_Entry *self)
 {
     UNUSED(self);
@@ -115,24 +113,144 @@ static long cmsx_Vtx_onExit(const OSD_Entry *self)
     return 0;
 }
 
-static OSD_UINT8_t entryVtxMode =  {&masterConfig.vtx_mode, 0, 2, 1};
-static OSD_UINT16_t entryVtxMhz =  {&masterConfig.vtx_mhz, 5600, 5950, 1};
+uint8_t vtxCurBand;
+uint8_t vtxCurChan;
+uint8_t vtxCurFreq;
+
+uint8_t vtxCmsBand;
+uint8_t vtxCmsChan;
+uint16_t vtxCmsFreqRef;
+
+char vtxCmsStatusString[31] = "- -- ---- ----";
+//                             m bc ffff pppp
+//                             01234567890123
+
+static void vtxCmsUpdateStatusString(void)
+{
+    vtxCmsStatusString[0] = '*'; // Place holder for opmodel
+    vtxCmsStatusString[1] = ' ';
+    vtxCmsStatusString[2] = vtx58BandLetter[vtxCurBand];
+    vtxCmsStatusString[3] = vtx58ChannelNames[vtxCurChan][0];
+    vtxCmsStatusString[4] = ' ';
+
+    vtxCurFreq = vtx58FreqTable[vtxCurBand - 1][vtxCurChan - 1];
+
+debug[3] = vtxCurFreq;
+    tfp_sprintf(&vtxCmsStatusString[5], "%4d", vtxCurFreq);
+}
+
+static void vtxCmsUpdateFreqRef(void)
+{
+    if (vtxCmsBand > 0 && vtxCmsChan > 0)
+        vtxCmsFreqRef = vtx58FreqTable[vtxCmsBand - 1][vtxCmsChan - 1];
+}
+
+static long cmsx_Vtx_onEnter(void)
+{
+    cmsx_Vtx_FeatureRead();
+    cmsx_Vtx_ConfigRead();
+
+    (void)gen6705GetBandChan(&vtxCurBand, &vtxCurChan);
+
+    vtxCmsUpdateStatusString();
+
+    vtxCmsBand = vtxCurBand;
+    vtxCmsChan = vtxCurChan;
+    vtxCmsUpdateFreqRef();
+
+    return 0;
+}
+
+static long vtxCmsConfigBand(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+
+    if (vtxCmsBand == 0)
+        // Bounce back
+        vtxCmsBand = 1;
+    else
+        vtxCmsUpdateFreqRef();
+
+    return 0;
+}
+
+static long vtxCmsConfigChan(displayPort_t *pDisp, const void *self)
+{   
+    UNUSED(pDisp);
+    UNUSED(self);
+    
+    if (vtxCmsChan == 0)
+        // Bounce back 
+        vtxCmsChan = 1;
+    else
+        vtxCmsUpdateFreqRef();
+    
+    return 0;
+}
+
+static long vtxCmsCommence(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+
+    gen6705SetBandChan(vtxCmsBand, vtxCmsChan);
+    //gen6705SetRFPower(vtxPowerTable[trampCmsPower-1]);
+
+    gen6705GetBandChan(&vtxCurBand, &vtxCurChan);
+    vtxCmsUpdateStatusString();
+
+    return MENU_CHAIN_BACK;
+}
+
+static OSD_TAB_t vtxCmsEntBand = { &vtxCmsBand, 5, vtx58BandNames, NULL };
+static OSD_TAB_t vtxCmsEntChan = { &vtxCmsChan, 8, vtx58ChannelNames, NULL };
+static OSD_UINT16_t vtxCmsEntFreqRef = { &vtxCmsFreqRef, 5600, 5900, 0 };
+
+static OSD_Entry vtxCmsMenuCommenceEntries[] = {
+    { "CONFIRM", OME_Label,   NULL,          NULL, 0 },
+    { "YES",     OME_Funcall, vtxCmsCommence, NULL, 0 },
+    { "BACK",    OME_Back, NULL, NULL, 0 },
+    { NULL,      OME_END, NULL, NULL, 0 }
+};
+
+static CMS_Menu vtxCmsMenuCommence = {
+    .GUARD_text = "XVTXCOM",
+    .GUARD_type = OME_MENU,
+    .onEnter = NULL,
+    .onExit = NULL,
+    .onGlobalExit = NULL,
+    .entries = vtxCmsMenuCommenceEntries,
+};
 
 #warning XXX VTX and USE_RTC6705 are obsolete; fix this menu 
 
+#ifdef outdated_singularity
+static OSD_UINT8_t entryVtxMode =  {&masterConfig.vtx_mode, 0, 2, 1};
+static OSD_UINT16_t entryVtxMhz =  {&masterConfig.vtx_mhz, 5600, 5950, 1};
+#endif
+
 static OSD_Entry cmsx_menuVtxEntries[] =
 {
-    {"--- VTX ---", OME_Label, NULL, NULL, 0},
-    {"ENABLED", OME_Bool, NULL, &cmsx_featureVtx, 0},
-#ifdef VTX
+    { "-- VTX6705 --", OME_Label, NULL, NULL, 0},
+    { "",              OME_Label, NULL,             vtxCmsStatusString, DYNAMIC },
+
+    {"RC CTRL", OME_Bool, NULL, &cmsx_featureVtxRc, 0}, // Shouln't be here
+
+#ifdef outdated_singularity
     {"VTX MODE", OME_UINT8, NULL, &entryVtxMode, 0},
     {"VTX MHZ", OME_UINT16, NULL, &entryVtxMhz, 0},
 #endif // VTX
-    {"BAND", OME_TAB, NULL, &entryVtxBand, 0},
-    {"CHANNEL", OME_UINT8, NULL, &entryVtxChannel, 0},
-#ifdef USE_RTC6705
+
+    { "BAND", OME_TAB, vtxCmsConfigBand, &vtxCmsEntBand, 0},
+    { "CHAN", OME_TAB, vtxCmsConfigChan, &vtxCmsEntChan, 0},
+    { "(FREQ)", OME_UINT16, NULL, &vtxCmsEntFreqRef, DYNAMIC},
+    { "SET",    OME_Submenu, cmsMenuChange, &vtxCmsMenuCommence, 0 },
+
+#ifdef outdated_sirinfpv
     {"LOW POWER", OME_Bool, NULL, &masterConfig.vtx_power, 0},
 #endif // USE_RTC6705
+
     {"BACK", OME_Back, NULL, NULL, 0},
     {NULL, OME_END, NULL, NULL, 0}
 };

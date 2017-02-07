@@ -152,8 +152,10 @@
 #define SPI3_MISO_PIN           PC11
 #define SPI3_MOSI_PIN           PC12
 
-//#define USE_I2C
-//#define I2C_DEVICE (I2CDEV_1)
+// Enable I2C for OLED (debugging aid)
+#define USE_I2C
+//#define I2C_DEVICE (I2CDEV_1) // PB8(PPM/PWM1),PB9(PWM2)
+#define I2C_DEVICE (I2CDEV_2) // PB10(UART3),PB11(UART3)
 
 #define USE_ADC
 #define CURRENT_METER_ADC_PIN   PC1

@@ -15,3 +15,6 @@ typedef struct gen6705Config_s {
 
 void gen6705Init(gen6705Config_t *pConfigToUse);
 void gen6705ConfigReset(gen6705Config_t *pConfigToReset);
+
+void gen6705SetBandChan(uint8_t band, uint8_t chan);
+bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan);
