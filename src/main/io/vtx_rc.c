@@ -37,6 +37,8 @@
 #include "fc/runtime_config.h"
 #include "io/beeper.h"
 
+static vtxConfig_t *pVtxConfig = NULL;
+
 static uint8_t locked = 0;
 
 static uint8_t numBand;
@@ -48,32 +50,11 @@ static uint8_t curChan;
 static uint8_t reqBand;
 static uint8_t reqChan;
 
-#if 0
-static void setChannelSaveAndNotify(uint8_t *bandOrChannel, uint8_t step, int32_t min, int32_t max)
-{
-    if (ARMING_FLAG(ARMED)) {
-        // Once armed, there will be no changes to VTX.
-        locked = 1;
-    }
-
-#warning XXX Handle SINGULARITY vtx_mode correctly
-    //if (masterConfig.vtx_mode == 0 && !locked)
-    if (!locked)
-    {
-        uint8_t temp = (*bandOrChannel) + step;
-        temp = constrain(temp, min, max);
-        *bandOrChannel = temp;
-
-        vtxCommonSetBandChan(masterConfig.vtx_band, masterConfig.vtx_channel);
-        writeEEPROM();
-        readEEPROM();
-        beeperConfirmationBeeps(temp);
-    }
-}
-#endif
-
 static void vtxRcChangeBand(int delta)
 {
+    if (!pVtxConfig && pVtxConfig->vtx_mode != 0)
+        return;
+
     if (!vtxCommonGetBandChan(&curBand, &curChan))
         return;
 
@@ -92,6 +73,9 @@ static void vtxRcChangeBand(int delta)
 
 static void vtxRcChangeChan(int delta)
 {
+    if (!pVtxConfig && pVtxConfig->vtx_mode != 0)
+        return;
+
     if (!vtxCommonGetBandChan(&curBand, &curChan))
         return;
 
@@ -134,9 +118,7 @@ void vtxRcUpdateActivatedChannel(void)
         locked = 1;
     }
 
-#warning XXX Handle SINGULARITY vtx_mode correctly
-    // if (masterConfig.vtx_mode == 2 && !locked)
-    if (!locked)
+    if (pVtxConfig && pVtxConfig->vtx_mode == 2 && !locked)
     {
         static uint8_t lastIndex = -1;
         uint8_t index;
@@ -153,9 +135,11 @@ void vtxRcUpdateActivatedChannel(void)
     }
 }
 
-void vtxRcInit(void)
+void vtxRcInit(vtxConfig_t *pVtxConfigToUse)
 {
-    // What if this call fail?
+    pVtxConfig = pVtxConfigToUse;
+
+    // XXX What if this call fail?
     vtxCommonGetParam(&numBand, &numChannel, NULL, NULL, NULL, NULL);
 }
 #endif

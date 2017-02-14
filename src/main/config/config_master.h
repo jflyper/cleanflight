@@ -35,6 +35,7 @@
 #include "drivers/light_led.h"
 #include "drivers/flash.h"
 #include "drivers/display.h"
+#include "drivers/vtx_common.h"
 
 #include "fc/rc_controls.h"
 
@@ -52,7 +53,6 @@
 #include "io/osd.h"
 #include "io/ledstrip.h"
 #include "io/vtx_rc.h"
-#include "io/vtx_gen6705.h"
 
 #include "rx/rx.h"
 
@@ -112,7 +112,7 @@
 #define displayPortProfileMax7456(x) (&masterConfig.displayPortProfileMax7456)
 #define displayPortProfileOled(x) (&masterConfig.displayPortProfileOled)
 #define vtx6705PinConfig(x) (&masterConfig.vtx6705PinConfig)
-#define gen6705Config(x) (&masterConfig.gen6705Config)
+#define vtxConfig(x) (&masterConfig.vtxConfig)
 
 // System-wide
 typedef struct master_s {
@@ -236,20 +236,8 @@ typedef struct master_s {
     SPIPinConfig_t vtx6705PinConfig;
 #endif
 
-#ifdef VTX_RTC6705_SOFTSPI // XXX Consolidate
-    uint8_t vtx_sirin_channel;
-    uint8_t vtx_sirin_power;
-#endif
-
-#ifdef USE_VTX_RC // XXX Not really USE_VTX_RC... should reorganize
-    uint8_t vtx_mode; //0=ch+band 1=mhz
-    uint8_t vtx_band; //1=A, 2=B, 3=E, 4=F(Airwaves/Fatshark), 5=Raceband
-    uint8_t vtx_channel; //1-8
-    uint16_t vtx_mhz; //5740
-#endif
-
-#ifdef VTX_GEN6705
-    gen6705Config_t gen6705Config;
+#ifdef VTX_COMMON
+    vtxConfig_t vtxConfig;
 #endif
 
 #ifdef USE_VTX_RC

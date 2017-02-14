@@ -27,9 +27,9 @@
 #include "fc/config.h"
 
 #include "io/vtx_string.h"
+#include "drivers/vtx_common.h"
 #include "io/vtx_gen6705.h"
 
-#include "drivers/vtx_common.h"
 #include "drivers/bus_spi.h"
 #include "drivers/io.h"
 
@@ -51,7 +51,6 @@ static void gen6705WriteRegister(uint8_t addr, uint32_t data)
 // Upward API
 
 static vtxVTable_t gen6705VTable;
-static gen6705Config_t *pConfig;
 
 static char *gen6705PowerNames[] = {
     "MIN",
@@ -107,12 +106,6 @@ void gen6705SetBandChan(uint8_t band, uint8_t chan)
 
     gen6705Device.curBand = band;
     gen6705Device.curChan = chan;
-
-    pConfig->band = band;
-    pConfig->chan = chan;
-
-    writeEEPROM();
-    readEEPROM();
 }
 
 bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
@@ -123,24 +116,9 @@ bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
     return true;
 }
 
-void gen6705Init(gen6705Config_t *pConfigToUse)
+void gen6705Init(void)
 {
-    pConfig = pConfigToUse;
-
-    // Initialize RTC6705 according to stored memory.
-
-    gen6705SetBandChan(pConfig->band, pConfig->chan);
-
-    gen6705Device.curBand = pConfig->band;
-    gen6705Device.curChan = pConfig->chan;
-
     vtxCommonRegisterDevice(&gen6705Device);
-}
-
-void gen6705ConfigReset(gen6705Config_t *pConfigToReset)
-{
-    pConfigToReset->band = 1;
-    pConfigToReset->chan = 1;
 }
 
 #if 0

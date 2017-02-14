@@ -764,6 +764,13 @@ bool vtxSAIsReady(void)
     return !(saDevice.version == 0);
 }
 
+// Frequency selection mode
+// Need power cycle to take effect.
+// XXX Will start transmitting at pre-set frequency as soon as it reboots!?
+void vtxSASetFselMode(uint8_t mode)
+{
+}
+
 void vtxSASetBandChan(uint8_t band, uint8_t chan)
 {
     if (band && chan)

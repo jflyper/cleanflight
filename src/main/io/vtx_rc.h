@@ -18,6 +18,7 @@
 #pragma once
 
 #include "fc/rc_controls.h"
+#include "drivers/vtx_common.h" // for vtxConfig_t
 
 #if 0
 #define VTX_BAND_MIN                            1
@@ -35,7 +36,7 @@ typedef struct vtxRcChannelActivationCondition_s {
     channelRange_t range;
 } vtxRcChannelActivationCondition_t;
 
-void vtxRcInit(void);
+void vtxRcInit(vtxConfig_t *vtxConfigToUse);
 void vtxRcIncrementBand(void);
 void vtxRcDecrementBand(void);
 void vtxRcIncrementChannel(void);

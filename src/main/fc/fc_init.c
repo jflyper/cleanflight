@@ -92,7 +92,7 @@
 #include "io/transponder_ir.h"
 #include "io/osd.h"
 #include "io/displayport_msp.h"
-#include "io/vtx_singularity.h"
+#include "io/vtx_gen6705.h"
 #include "io/vtx_smartaudio.h"
 #include "io/vtx_tramp.h"
 
@@ -368,41 +368,63 @@ void init(void)
 
     initBoardAlignment(boardAlignment());
 
-// VTX system initialization
+#ifdef VTX_COMMON
+    // VTX system initialization
+    switch (vtxConfig()->vtx_device) {
 
-#ifdef VTX_RTC6705_SOFTSPI
-    rtc6705_softspi_init(vtx6705PinConfig());
-    //current_vtx_channel = masterConfig.vtx_channel;
-    //rtc6705_soft_spi_set_channel(vtx_freq[current_vtx_channel]);
-    //rtc6705_soft_spi_set_rf_power(masterConfig.vtx_power);
-#endif
+# ifdef VTX_RTC6705_SPI
+    case VTX_DEVICE_RTC6705_SPI:
+        // XXX Switch to configurable SPI handling when it become available.
+        // Until then, driver uses per target defined pins.
+        rtc6705_spi_init();
+        break;
+# endif
 
-#ifdef VTX_RTC6705_SPI
-    // XXX Switch to configurable SPI resource handling when it become available.
-    rtc6705_spi_init();
-#endif
+# ifdef VTX_RTC6705_SOFTSPI
+    case VTX_DEVICE_RTC6705_SOFTSPI:
+        rtc6705_softspi_init(vtx6705PinConfig());
+        break;
+# endif
 
-#ifdef VTX_GEN6705
-    gen6705Init(gen6705Config());
-#endif
+# ifdef VTX_CONTROL
+    case VTX_DEVICE_OTHER:
 
-#ifdef VTX_CONTROL
+        // SmartAudio and Tramp. If they are both configured, then one of them
+        // should fail opening uart by serial function lookup failure.
+        // Enabling both at the same time (by assigning different uart),
+        // Tramp will win as the sole vtx_common device.
+
 #  ifdef VTX_SMARTAUDIO
-    smartAudioInit();
+        smartAudioInit();
 #  endif
 
 #  ifdef VTX_TRAMP
-    trampInit();
+        trampInit();
 #  endif
-#endif // VTX_CONTROL
+        break;
+# endif // VTX_CONTROL
+    } // switch
 
-#ifdef USE_VTX_RC
+# ifdef VTX_GEN6705
+    if (vtxConfig()->vtx_device == VTX_DEVICE_RTC6705_SPI
+        || vtxConfig()->vtx_device == VTX_DEVICE_RTC6705_SOFTSPI)
+        // Generic RTC6705 driver; after lower level drivers are initialized.
+        gen6705Init();
+# endif
+
+    vtxCommonInit(vtxConfig());
+
+# ifdef USE_VTX_RC
+    // RC controls for VTX; after everything else are initialized.
+    // XXX Should be called from vtxCommonInit()?
     if (feature(FEATURE_VTXRC)) {
-        vtxRcInit();
+        vtxRcInit(vtxConfig());
     }
-#endif
+# endif
 
-// End of VTX system initialization
+#endif // VTX_COMMON
+    // End of VTX system initialization
+
 
 #ifdef CMS
     cmsInit();

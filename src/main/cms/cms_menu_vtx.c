@@ -68,17 +68,6 @@ static long cmsx_Vtx_FeatureWriteback(void)
     return 0;
 }
 
-static const char * const vtxBandNames[] = {
-    "BOSCAM A",
-    "BOSCAM B",
-    "BOSCAM E",
-    "FATSHARK",
-    "RACEBAND",
-};
-
-static OSD_TAB_t entryVtxBand = {&cmsx_vtxBand,4,&vtxBandNames[0]};
-static OSD_UINT8_t entryVtxChannel =  {&cmsx_vtxChannel, 1, 8, 1};
-
 static void cmsx_Vtx_ConfigRead(void)
 {
 #ifdef VTX
@@ -115,11 +104,14 @@ static long cmsx_Vtx_onExit(const OSD_Entry *self)
 
 uint8_t vtxCurBand;
 uint8_t vtxCurChan;
-uint8_t vtxCurFreq;
+uint16_t vtxCurFreq;
+uint8_t vtxCurPower;
 
 uint8_t vtxCmsBand;
 uint8_t vtxCmsChan;
 uint16_t vtxCmsFreqRef;
+uint16_t vtxCmsFreq;
+uint8_t vtxCmsPower;
 
 char vtxCmsStatusString[31] = "- -- ---- ----";
 //                             m bc ffff pppp
@@ -134,8 +126,6 @@ static void vtxCmsUpdateStatusString(void)
     vtxCmsStatusString[4] = ' ';
 
     vtxCurFreq = vtx58FreqTable[vtxCurBand - 1][vtxCurChan - 1];
-
-debug[3] = vtxCurFreq;
     tfp_sprintf(&vtxCmsStatusString[5], "%4d", vtxCurFreq);
 }
 
@@ -160,6 +150,39 @@ static long cmsx_Vtx_onEnter(void)
 
     return 0;
 }
+
+static uint8_t vtxCmsFselMode;
+
+static const char * const vtxCmsFselModeNames[] = {
+    "BANDCHAN",
+    "DIRECT  ",
+    "VTXRC   "
+};
+
+static OSD_TAB_t vtxCmsEntFselMode = { &vtxCmsFselMode, 2, vtxCmsFselModeNames };
+
+static long vtxCmsConfigFselMode(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+    return 0;
+}
+
+static OSD_Entry vtxCmsMenuConfigEntries[] = {
+    { "- VTX CONFIG -", OME_Label, NULL, NULL, 0 },
+    { "FSEL MODE", OME_TAB,    vtxCmsConfigFselMode, &vtxCmsEntFselMode, 0 },
+    { "BACK", OME_Back, NULL, NULL, 0 },
+    { NULL, OME_END, NULL, NULL, 0 }
+};
+
+static CMS_Menu vtxCmsMenuConfig = {
+    .GUARD_text = "VTXCFG",
+    .GUARD_type = OME_MENU,
+    .onEnter = NULL,
+    .onExit = NULL,
+    .onGlobalExit = NULL,
+    .entries = vtxCmsMenuConfigEntries
+};
 
 static long vtxCmsConfigBand(displayPort_t *pDisp, const void *self)
 {
@@ -207,6 +230,23 @@ static OSD_TAB_t vtxCmsEntBand = { &vtxCmsBand, 5, vtx58BandNames, NULL };
 static OSD_TAB_t vtxCmsEntChan = { &vtxCmsChan, 8, vtx58ChannelNames, NULL };
 static OSD_UINT16_t vtxCmsEntFreqRef = { &vtxCmsFreqRef, 5600, 5900, 0 };
 
+static const char * const vtxCmsPowerNames[] = {
+    "MIN ",
+    "LOW ",
+    "HIGH",
+    "MAX"
+};
+
+static OSD_TAB_t vtxCmsEntPower = { &vtxCmsPower, 4, vtxCmsPowerNames, NULL };
+
+static long vtxCmsConfigPower(displayPort_t *pDisp, const void *self)
+{   
+    UNUSED(pDisp);
+    UNUSED(self);
+
+    return 0;
+}
+
 static OSD_Entry vtxCmsMenuCommenceEntries[] = {
     { "CONFIRM", OME_Label,   NULL,          NULL, 0 },
     { "YES",     OME_Funcall, vtxCmsCommence, NULL, 0 },
@@ -223,29 +263,16 @@ static CMS_Menu vtxCmsMenuCommence = {
     .entries = vtxCmsMenuCommenceEntries,
 };
 
-#warning XXX VTX and USE_RTC6705 are obsolete; fix this menu 
-
-#ifdef outdated_singularity
-static OSD_UINT8_t entryVtxMode =  {&masterConfig.vtx_mode, 0, 2, 1};
-static OSD_UINT16_t entryVtxMhz =  {&masterConfig.vtx_mhz, 5600, 5950, 1};
-#endif
-
 static OSD_Entry cmsx_menuVtxEntries[] =
 {
     { "-- VTX6705 --", OME_Label, NULL, NULL, 0},
-    { "",              OME_Label, NULL,             vtxCmsStatusString, DYNAMIC },
-
-    {"RC CTRL", OME_Bool, NULL, &cmsx_featureVtxRc, 0}, // Shouln't be here
-
-#ifdef outdated_singularity
-    {"VTX MODE", OME_UINT8, NULL, &entryVtxMode, 0},
-    {"VTX MHZ", OME_UINT16, NULL, &entryVtxMhz, 0},
-#endif // VTX
-
-    { "BAND", OME_TAB, vtxCmsConfigBand, &vtxCmsEntBand, 0},
-    { "CHAN", OME_TAB, vtxCmsConfigChan, &vtxCmsEntChan, 0},
+    { "",              OME_Label, NULL, vtxCmsStatusString, DYNAMIC },
+    { "BAND", OME_TAB, vtxCmsConfigBand, &vtxCmsEntBand, 0 },
+    { "CHAN", OME_TAB, vtxCmsConfigChan, &vtxCmsEntChan, 0 },
     { "(FREQ)", OME_UINT16, NULL, &vtxCmsEntFreqRef, DYNAMIC},
+    { "POWER", OME_TAB, vtxCmsConfigPower, &vtxCmsEntPower, 0 },
     { "SET",    OME_Submenu, cmsMenuChange, &vtxCmsMenuCommence, 0 },
+    { "CONFIG", OME_Submenu, cmsMenuChange, &vtxCmsMenuConfig, 0 },
 
 #ifdef outdated_sirinfpv
     {"LOW POWER", OME_Bool, NULL, &masterConfig.vtx_power, 0},
@@ -256,7 +283,7 @@ static OSD_Entry cmsx_menuVtxEntries[] =
 };
 
 CMS_Menu cmsx_menuVtx = {
-    .GUARD_text = "MENUVTX",
+    .GUARD_text = "MENUVTXBC",
     .GUARD_type = OME_MENU,
     .onEnter = cmsx_Vtx_onEnter,
     .onExit= cmsx_Vtx_onExit,

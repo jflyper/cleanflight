@@ -17,6 +17,28 @@
 
 /* Created by jflyper */
 
+// Interface to cli variables
+
+#pragma once
+
+typedef struct vtxConfig_s {
+    uint8_t vtx_device; // External=0, Internal SPI=1, Internal SoftSPI=2
+    uint8_t vtx_mode;   // 0~2
+    uint8_t vtx_band;
+    uint8_t vtx_channel;
+    uint8_t vtx_power;
+    uint16_t vtx_mhz;
+} vtxConfig_t;
+
+// Device type for vtx_device CLI var.
+// Initialized based on per target RTC6705 driver usage, can be modified by CLI.
+typedef enum {
+    VTX_DEVICE_OTHER = 0,
+    VTX_DEVICE_RTC6705_SPI,
+    VTX_DEVICE_RTC6705_SOFTSPI,
+} vtxDevice_e;
+
+// For MSP
 typedef enum {
     VTXDEV_UNSUPPORTED = 0, // reserved for MSP
     VTXDEV_GEN6705 = 1,
@@ -56,11 +78,15 @@ typedef struct vtxVTable_s {
     vtxDevType_e (*getDeviceType)(void);
     bool (*isReady)(void);
 
+    void (*setFselMode)(uint8_t mode); // Band/channel(0) or Direct frequency(1)
     void (*setBandChan)(uint8_t band, uint8_t chan);
+    void (*setFreq)(uint16_t freq);
     void (*setPowerByIndex)(uint8_t level);
     void (*setPitmode)(uint8_t onoff);
 
+    bool (*getFselMode)(uint8_t *pMode); // Band/channel(0) or Direct frequency(1)
     bool (*getBandChan)(uint8_t *pBand, uint8_t *pChan);
+    bool (*getFreq)(uint16_t *pFreq);
     bool (*getPowerIndex)(uint8_t *pIndex);
     bool (*getPitmode)(uint8_t *pOnoff);
 } vtxVTable_t;
@@ -70,16 +96,18 @@ typedef struct vtxVTable_s {
 // - It can be a dedicated mode, or lowest RF power possible.
 // - It is *NOT* RF on/off control ?
 
-void vtxCommonInit(void);
+void vtxCommonInit(vtxConfig_t *pVtxConfigToUse);
 void vtxCommonRegisterDevice(vtxDevice_t *pDevice);
 
 // VTable functions
 void vtxCommonProcess(uint32_t currentTimeUs);
 uint8_t vtxCommonGetDeviceType(void);
 void vtxCommonSetBandChan(uint8_t band, uint8_t chan);
+void vtxCommonSetFreq(uint16_t freq);
 void vtxCommonSetPowerByIndex(uint8_t level);
 void vtxCommonSetPitmode(uint8_t onoff);
 bool vtxCommonGetBandChan(uint8_t *pBand, uint8_t *pChan);
+void vtxCommonGetFreq(uint16_t *pFreq);
 bool vtxCommonGetPowerIndex(uint8_t *pIndex);
 bool vtxCommonGetPitmode(uint8_t *pOnoff);
 

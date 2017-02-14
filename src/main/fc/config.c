@@ -57,6 +57,8 @@
 #include "drivers/system.h"
 #include "drivers/timer.h"
 #include "drivers/vcd.h"
+#include "drivers/vtx_common.h"
+#include "drivers/vtx_rtc6705_softspi.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
@@ -79,7 +81,6 @@
 #include "io/osd.h"
 #include "io/serial.h"
 #include "io/servos.h"
-#include "io/vtx_gen6705.h"
 #include "io/vtx_rc.h"
 
 #include "rx/rx.h"
@@ -547,6 +548,25 @@ void resetFlashConfig(flashConfig_t *flashConfig)
 }
 #endif
 
+#ifdef VTX_COMMON
+void resetVtxConfig(vtxConfig_t *vtxConfig)
+{
+# if defined(VTX_RTC6705_SPI)
+    vtxConfig->vtx_device = VTX_DEVICE_RTC6705_SPI;
+# elif defined(VTX_RTC6705_SOFTSPI)
+    vtxConfig->vtx_device = VTX_DEVICE_RTC6705_SOFTSPI;
+# else
+    vtxConfig->vtx_device = VTX_DEVICE_OTHER;
+# endif
+
+    vtxConfig->vtx_mode = 0;
+    vtxConfig->vtx_band = 1;
+    vtxConfig->vtx_channel = 1;
+    vtxConfig->vtx_mhz = 5740;
+    vtxConfig->vtx_power = 0;
+}
+#endif
+
 uint8_t getCurrentProfile(void)
 {
     return masterConfig.current_profile_index;
@@ -817,15 +837,12 @@ void createDefaultConfig(master_t *config)
         config->customMotorMixer[i].throttle = 0.0f;
     }
 
-#ifdef VTX_RTC6705_SPI // XXX Consolidate
-    config->vtx_band = 4;    //Fatshark/Airwaves
-    config->vtx_channel = 1; //CH1
-    config->vtx_mode = 0;    //CH+BAND mode
-    config->vtx_mhz = 5740;  //F0
+#ifdef VTX_RTC6705_SOFTSPI
+    rtc6705_softspi_pinConfigReset(vtx6705PinConfig());
 #endif
 
-#ifdef VTX_GEN6705
-    gen6705ConfigReset(gen6705Config());
+#ifdef VTX_COMMON
+    resetVtxConfig(vtxConfig());
 #endif
 
 #ifdef TRANSPONDER

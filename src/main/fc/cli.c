@@ -757,18 +757,12 @@ static const clivalue_t valueTable[] = {
     { "blackbox_on_motor_test",     VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP,  &blackboxConfig()->on_motor_test, .config.lookup = { TABLE_OFF_ON } },
 #endif
 
-#if 0
 #ifdef VTX_COMMON
-    { "vtx_band",                   VAR_UINT8  | MASTER_VALUE,  &masterConfig.vtx_band, .config.minmax = { 1, 5 } },
-    { "vtx_channel",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.vtx_channel, .config.minmax = { 1, 8 } },
-    { "vtx_mode",                   VAR_UINT8  | MASTER_VALUE,  &masterConfig.vtx_mode, .config.minmax = { 0, 2 } },
-    { "vtx_mhz",                    VAR_UINT16 | MASTER_VALUE,  &masterConfig.vtx_mhz, .config.minmax = { 5600, 5950 } },
-#endif
-#endif
-
-#ifdef VTX_GEN6705
-    { "vtx_band",                   VAR_UINT8  | MASTER_VALUE,  &gen6705Config()->band, .config.minmax = { 1, 5 } },
-    { "vtx_channel",                VAR_UINT8  | MASTER_VALUE,  &gen6705Config()->chan, .config.minmax = { 1, 8 } },
+    { "vtx_device",                 VAR_UINT8  | MASTER_VALUE,  &vtxConfig()->vtx_device, .config.minmax = { 0, 2 } },
+    { "vtx_mode",                   VAR_UINT8  | MASTER_VALUE,  &vtxConfig()->vtx_mode, .config.minmax = { 0, 2 } },
+    { "vtx_band",                   VAR_UINT8  | MASTER_VALUE,  &vtxConfig()->vtx_band, .config.minmax = { 1, 5 } },
+    { "vtx_channel",                VAR_UINT8  | MASTER_VALUE,  &vtxConfig()->vtx_channel, .config.minmax = { 1, 8 } },
+    { "vtx_mhz",                    VAR_UINT16 | MASTER_VALUE,  &vtxConfig()->vtx_mhz, .config.minmax = { 5600, 5950 } },
 #endif
 
 #ifdef MAG
