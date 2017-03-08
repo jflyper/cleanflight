@@ -28,7 +28,7 @@
 
 void mpu9250SpiResetGyro(void);
 
-bool mpu9250SpiDetect(const sensorBus_t *bus);
+mpuSensor_e mpu9250SpiDetect(const sensorBus_t *bus);
 
 bool mpu9250SpiAccDetect(accDev_t *acc);
 bool mpu9250SpiGyroDetect(gyroDev_t *gyro);

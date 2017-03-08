@@ -180,7 +180,7 @@ static void mpu9250AccAndGyroInit(gyroDev_t *gyro) {
     mpuSpi9250InitDone = true; //init done
 }
 
-bool mpu9250SpiDetect(const sensorBus_t *bus)
+mpuSensor_e mpu9250SpiDetect(const sensorBus_t *bus)
 {
     uint8_t in;
     uint8_t attemptsRemaining = 20;
@@ -199,13 +199,13 @@ bool mpu9250SpiDetect(const sensorBus_t *bus)
             break;
         }
         if (!attemptsRemaining) {
-            return false;
+            return MPU_NONE;
         }
     } while (attemptsRemaining--);
 
     spiSetDivisor(MPU9250_SPI_INSTANCE, SPI_CLOCK_FAST);
 
-    return true;
+    return MPU_9250_SPI;
 }
 
 bool mpu9250SpiAccDetect(accDev_t *acc)

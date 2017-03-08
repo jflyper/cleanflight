@@ -27,7 +27,7 @@ bool icm20689GyroDetect(gyroDev_t *gyro);
 void icm20689AccInit(accDev_t *acc);
 void icm20689GyroInit(gyroDev_t *gyro);
 
-bool icm20689SpiDetect(const sensorBus_t *bus);
+mpuSensor_e icm20689SpiDetect(const sensorBus_t *bus);
 
 bool icm20689SpiAccDetect(accDev_t *acc);
 bool icm20689SpiGyroDetect(gyroDev_t *gyro);

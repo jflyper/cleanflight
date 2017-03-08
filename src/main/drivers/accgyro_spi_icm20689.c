@@ -75,7 +75,7 @@ static void icm20689SpiInit(const sensorBus_t *bus)
     hardwareInitialised = true;
 }
 
-bool icm20689SpiDetect(const sensorBus_t *bus)
+mpuSensor_e icm20689SpiDetect(const sensorBus_t *bus)
 {
     uint8_t tmp;
     uint8_t attemptsRemaining = 20;
@@ -94,13 +94,13 @@ bool icm20689SpiDetect(const sensorBus_t *bus)
             break;
         }
         if (!attemptsRemaining) {
-            return false;
+            return MPU_NONE;
         }
     } while (attemptsRemaining--);
 
     spiSetDivisor(ICM20689_SPI_INSTANCE, SPI_CLOCK_STANDARD);
 
-    return true;
+    return ICM_20689_SPI;
 
 }
 

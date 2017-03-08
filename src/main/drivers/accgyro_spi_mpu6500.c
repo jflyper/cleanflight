@@ -75,8 +75,8 @@ static void mpu6500SpiInit(const sensorBus_t *bus)
     hardwareInitialised = true;
 }
 
-static uint8_t mpuDetected = MPU_NONE;
-uint8_t mpu6500SpiDetect(const sensorBus_t *bus)
+static mpuSensor_e mpuDetected = MPU_NONE;
+mpuSensor_e mpu6500SpiDetect(const sensorBus_t *bus)
 {
     uint8_t tmp;
 
