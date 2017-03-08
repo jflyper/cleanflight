@@ -206,13 +206,11 @@ STATIC_UNIT_TESTED gyroSensor_e gyroDetect(gyroDev_t *dev)
     case GYRO_MPU6500:
     case GYRO_ICM20608G:
     case GYRO_ICM20602:
-debug[0] = 123;
 #ifdef USE_GYRO_SPI_MPU6500
         if (mpu6500GyroDetect(dev) || mpu6500SpiGyroDetect(dev)) {
 #else
         if (mpu6500GyroDetect(dev)) {
 #endif
-debug[1] = dev->mpuDetectionResult.sensor;
             switch(dev->mpuDetectionResult.sensor) {
             case MPU_9250_SPI:
                 gyroHardware = GYRO_MPU9250;
@@ -296,7 +294,7 @@ bool gyroInit(void)
 
     sensorBus_t bus;
 #ifdef USE_DUAL_GYRO
-    bus.spi.csnPin = gyroConfig()->gyro_to_use == 0 ? : GYRO_0_CS_PIN ? GYRO_1_CS_PIN;
+    bus.spi.csnPin = gyroConfig()->gyro_to_use == 0 ? IOGetByTag(IO_TAG(GYRO_0_CS_PIN)) : IOGetByTag(IO_TAG(GYRO_1_CS_PIN));
 #else
     bus.spi.csnPin = IO_NONE;
 #endif // USE_DUAL_GYRO

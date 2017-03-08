@@ -148,7 +148,7 @@ void mpu6000SpiAccInit(accDev_t *acc)
     acc->acc_1G = 512 * 4;
 }
 
-bool mpu6000SpiDetect(const sensorBus_t *bus)
+uint8_t mpu6000SpiDetect(const sensorBus_t *bus)
 {
     uint8_t in;
     uint8_t attemptsRemaining = 5;
@@ -190,10 +190,10 @@ bool mpu6000SpiDetect(const sensorBus_t *bus)
         case MPU6000_REV_D8:
         case MPU6000_REV_D9:
         case MPU6000_REV_D10:
-            return true;
+            return MPU_60x0_SPI;
     }
 
-    return false;
+    return MPU_NONE;
 }
 
 static void mpu6000AccAndGyroInit(gyroDev_t *gyro)
