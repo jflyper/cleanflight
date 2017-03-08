@@ -9,4 +9,5 @@ TARGET_SRC = \
             drivers/compass_fake.c \
             drivers/compass_hmc5883l.c \
             drivers/light_ws2811strip.c \
-            drivers/light_ws2811strip_hal.c
+            drivers/light_ws2811strip_hal.c \
+            drivers/vtx_rtc6705_softspi.c \
