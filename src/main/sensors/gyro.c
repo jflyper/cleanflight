@@ -96,16 +96,19 @@ static void *notchFilter2[3];
 PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
 PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
-    .gyro_lpf = GYRO_LPF_256HZ,
+    .gyro_align = ALIGN_DEFAULT,
+    .gyroMovementCalibrationThreshold = 48,
     .gyro_sync_denom = GYRO_SYNC_DENOM_DEFAULT,
+    .gyro_lpf = GYRO_LPF_256HZ,
     .gyro_soft_lpf_type = FILTER_PT1,
     .gyro_soft_lpf_hz = 90,
+    .gyro_isr_update = false,
+    .gyro_use_32khz = false,
+    .gyro_to_use = 0,
     .gyro_soft_notch_hz_1 = 400,
     .gyro_soft_notch_cutoff_1 = 300,
     .gyro_soft_notch_hz_2 = 200,
-    .gyro_soft_notch_cutoff_2 = 100,
-    .gyro_align = ALIGN_DEFAULT,
-    .gyroMovementCalibrationThreshold = 48
+    .gyro_soft_notch_cutoff_2 = 100
 );
 
 #if defined(USE_GYRO_MPU6050) || defined(USE_GYRO_MPU3050) || defined(USE_GYRO_MPU6500) || defined(USE_GYRO_SPI_MPU6500) || defined(USE_GYRO_SPI_MPU6000) || defined(USE_ACC_MPU6050) || defined(USE_GYRO_SPI_MPU9250) || defined(USE_GYRO_SPI_ICM20689)
@@ -121,6 +124,11 @@ static const extiConfig_t *selectMPUIntExtiConfig(void)
 #endif
 }
 #endif
+
+IO_t gyroSpiCsnPin(void)
+{
+    return gyroDev0.bus.spi.csnPin;
+}
 
 const mpuConfiguration_t *gyroMpuConfiguration(void)
 {
@@ -283,8 +291,12 @@ bool gyroInit(void)
     memset(&gyro, 0, sizeof(gyro));
 #if defined(USE_GYRO_MPU6050) || defined(USE_GYRO_MPU3050) || defined(USE_GYRO_MPU6500) || defined(USE_GYRO_SPI_MPU6500) || defined(USE_GYRO_SPI_MPU6000) || defined(USE_ACC_MPU6050) || defined(USE_GYRO_SPI_MPU9250) || defined(USE_GYRO_SPI_ICM20689)
     gyroDev0.mpuIntExtiConfig = selectMPUIntExtiConfig();
-    mpuDetect(&gyroDev0);
-    mpuResetFn = gyroDev0.mpuConfiguration.resetFn;
+#ifdef USE_DUAL_GYRO
+    mpuDetect(&gyroDev0, gyroConfig()->gyro_to_use == 0 ? : GYRO_0_CS_PIN ? GYRO_1_CS_PIN));
+#else
+    mpuDetect(&gyroDev0, IO_NONE);
+#endif // USE_DUAL_GYRO
+    mpuResetFn = gyroDev0.mpuConfiguration.resetFn; // must be set after mpuDetect
 #endif
     const gyroSensor_e gyroHardware = gyroDetect(&gyroDev0);
     if (gyroHardware == GYRO_NONE) {

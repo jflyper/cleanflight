@@ -36,9 +36,10 @@
 #include "fc/config.h"
 #include "fc/runtime_config.h"
 
-#include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
 #include "sensors/compass.h"
+#include "sensors/gyro.h"
+#include "sensors/sensors.h"
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
 #include "hardware_revision.h"
@@ -144,6 +145,9 @@ bool compassInit(void)
     if (!compassDetect(&magDev, compassConfig()->mag_hardware)) {
         return false;
     }
+    // copy over SPI CS pin for AK8963 compass
+    magDev.bus.spi.csnPin = gyroSpiCsnPin();
+
     const int16_t deg = compassConfig()->mag_declination / 100;
     const int16_t min = compassConfig()->mag_declination % 100;
     mag.magneticDeclination = (deg + ((float)min * (1.0f / 60.0f))) * 10; // heading is in 0.1deg units

@@ -34,6 +34,8 @@
 
 #pragma once
 
+#include "sensor.h"
+
 enum pios_bmi160_orientation { // clockwise rotation from board forward
     PIOS_BMI160_TOP_0DEG,
     PIOS_BMI160_TOP_90DEG,
@@ -66,5 +68,6 @@ enum bmi160_gyro_range {
     BMI160_RANGE_2000DPS = 0x00,
 };
 
+bool BMI160_Detect(const sensorBus_t *bus);
 bool bmi160SpiAccDetect(accDev_t *acc);
 bool bmi160SpiGyroDetect(gyroDev_t *gyro);
