@@ -27,7 +27,9 @@
 
 #if defined(VTX_COMMON)
 
+#include "fc/config.h"
 #include "vtx_common.h"
+#include "vtx_debug.h"
 
 vtxDevice_t *vtxDevice = NULL;
 vtxConfig_t *pVtxConfig = NULL;
@@ -42,13 +44,15 @@ void vtxCommonRegisterDevice(vtxDevice_t *pDevice)
     // XXX Should we take care of devices that comes in "late"?
 }
 
+// XXX Periodical call (not yet)
 void vtxCommonProcess(uint32_t currentTimeUs)
 {
     if (!vtxDevice)
         return;
 
-    if (vtxDevice->vTable->process)
+    if (vtxDevice->vTable->process) {
         vtxDevice->vTable->process(currentTimeUs);
+    }
 }
 
 vtxDevType_e vtxCommonGetDeviceType(void)
@@ -74,7 +78,7 @@ void vtxCommonSetBandChan(uint8_t band, uint8_t chan)
     if (!vtxDevice)
         return;
 
-    if (pVtxConfig->vtx_mode != 1)
+    if (pVtxConfig->vtx_mode != 0)
         return;
 
     if ((band > vtxDevice->numBand)|| (chan > vtxDevice->numChan))
@@ -86,8 +90,11 @@ void vtxCommonSetBandChan(uint8_t band, uint8_t chan)
     pVtxConfig->vtx_band = band;
     pVtxConfig->vtx_channel = chan;
 
-    writeEEPROM();
-    readEEPROM();
+    dprintf(("vtxCommonSetBandChan: saving config\r\n"));
+    saveConfigAndNotify();
+
+    //writeEEPROM();
+    //readEEPROM();
 }
 
 // index is zero origin, zero = power off completely
@@ -105,7 +112,7 @@ void vtxCommonSetPowerByIndex(uint8_t index)
     pVtxConfig->vtx_power = index;
 
     writeEEPROM();
-    readEEPROM();
+    //readEEPROM();
 }
 
 void vtxCommonSetFreq(uint16_t freq)
@@ -125,7 +132,7 @@ void vtxCommonSetFreq(uint16_t freq)
     pVtxConfig->vtx_mhz = freq;
 
     writeEEPROM();
-    readEEPROM();
+    //readEEPROM();
 }
 
 // on = 1, off = 0
@@ -208,8 +215,12 @@ void vtxCommonInit(vtxConfig_t *pVtxConfigToUse)
 {
     pVtxConfig = pVtxConfigToUse;
 
-    if (!vtxDevice)
+    if (!vtxDevice) {
+        dprintf(("vtxCommonInit: no vtxDevice\r\n"));
         return;
+    }
+
+    dprintf(("vtxCommonInit: vtx_mode %d vtx_band %d vtx_chan %d vtx_mhz %d\r\n", pVtxConfig->vtx_mode, pVtxConfig->vtx_band, pVtxConfig->vtx_channel, pVtxConfig->vtx_mhz));
 
     // Initialize vtxDevice according to the vtxConfig.
 

@@ -22,6 +22,14 @@
 
 #ifdef VTX_RTC6705_SOFTSPI
 
+#ifdef VTX_COMMON_DPRINTF
+#include "io/serial.h"
+extern serialPort_t *debugSerialPort;
+# define dprintf(x) if (debugSerialPort) printf x
+#else // VTX_COMMON_DPRINTF
+# define dprintf(x)
+#endif // VTX_COMMON_DPRINTF
+
 #include "build/debug.h"
 
 #include "io/vtx_gen6705.h"
@@ -61,12 +69,16 @@ void rtc6705_softspi_pinConfigReset(SPIPinConfig_t *pSPIPinConfig)
 
 bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig)
 {
+    dprintf(("rtc6705_softspi_init: top\r\n"));
+
     rtc6705DataPin = IOGetByTag(pSPIPinConfig->mosiTag);
     rtc6705LePin   = IOGetByTag(pSPIPinConfig->nssTag);
     rtc6705ClkPin  = IOGetByTag(pSPIPinConfig->sckTag);
 
     if (!(rtc6705DataPin && rtc6705LePin && rtc6705ClkPin))
         return false;
+
+    dprintf(("rtc6705_softspi_init: pin ok\r\n"));
 
     IOInit(rtc6705DataPin, OWNER_SPI_MOSI, RESOURCE_SOFT_OFFSET);
     IOConfigGPIO(rtc6705DataPin, IOCFG_OUT_PP);

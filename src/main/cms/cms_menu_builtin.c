@@ -112,10 +112,15 @@ static OSD_Entry menuFeaturesEntries[] =
     {NULL, OME_END, NULL, NULL, 0}
 };
 
+static long cmsx_SetupFeaturesMenu(void)
+{
+    // XXX Setup menuFeaturesEntries to include the only active VTX menu.
+}
+
 static CMS_Menu menuFeatures = {
     .GUARD_text = "MENUFEATURES",
     .GUARD_type = OME_MENU,
-    .onEnter = NULL,
+    .onEnter = cmsx_SetupFeaturesMenu,
     .onExit = NULL,
     .onGlobalExit = NULL,
     .entries = menuFeaturesEntries,

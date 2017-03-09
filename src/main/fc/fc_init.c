@@ -143,6 +143,8 @@ extern uint8_t motorControlEnable;
 serialPort_t *loopbackPort;
 #endif
 
+#include "drivers/vtx_debug.h"
+
 uint8_t systemState = SYSTEM_STATE_INITIALISING;
 
 void processLoopback(void)
@@ -369,6 +371,17 @@ void init(void)
     initBoardAlignment(boardAlignment());
 
 #ifdef VTX_COMMON
+
+#ifdef VTX_COMMON_DPRINTF
+    // Setup debugSerialPort
+
+    debugSerialPort = openSerialPort(DPRINTF_SERIAL_PORT, FUNCTION_NONE, NULL, 115200, MODE_RXTX, 0);
+    if (debugSerialPort) {
+        setPrintfSerialPort(debugSerialPort);
+        dprintf(("VTX_COMMON_DPRINTF: OK\r\n"));
+    }
+#endif
+
     // VTX system initialization
     switch (vtxConfig()->vtx_device) {
 
@@ -376,12 +389,14 @@ void init(void)
     case VTX_DEVICE_RTC6705_SPI:
         // XXX Switch to configurable SPI handling when it become available.
         // Until then, driver uses per target defined pins.
+        dprintf(("init: calling rtc6705_spi_init\r\n"));
         rtc6705_spi_init();
         break;
 # endif
 
 # ifdef VTX_RTC6705_SOFTSPI
     case VTX_DEVICE_RTC6705_SOFTSPI:
+        dprintf(("init: calling rtc6705_softspi_init\r\n"));
         rtc6705_softspi_init(vtx6705PinConfig());
         break;
 # endif
@@ -395,11 +410,17 @@ void init(void)
         // Tramp will win as the sole vtx_common device.
 
 #  ifdef VTX_SMARTAUDIO
-        smartAudioInit();
+        if (findSerialPortConfig(FUNCTION_VTX_SMARTAUDIO)) {
+            dprintf(("init: calling smartAudioInit\r\n"));
+            smartAudioInit();
+        }
 #  endif
 
 #  ifdef VTX_TRAMP
-        trampInit();
+        if (findSerialPortConfig(FUNCTION_VTX_TRAMP)) {
+            dprintf(("init: calling trampInit\r\n"));
+            trampInit();
+        }
 #  endif
         break;
 # endif // VTX_CONTROL
@@ -407,17 +428,21 @@ void init(void)
 
 # ifdef VTX_GEN6705
     if (vtxConfig()->vtx_device == VTX_DEVICE_RTC6705_SPI
-        || vtxConfig()->vtx_device == VTX_DEVICE_RTC6705_SOFTSPI)
+        || vtxConfig()->vtx_device == VTX_DEVICE_RTC6705_SOFTSPI) {
         // Generic RTC6705 driver; after lower level drivers are initialized.
+        dprintf(("init: calling gen6705Init\r\n"));
         gen6705Init();
+    }
 # endif
 
+    dprintf(("init: calling vtxCommonInit\r\n"));
     vtxCommonInit(vtxConfig());
 
 # ifdef USE_VTX_RC
     // RC controls for VTX; after everything else are initialized.
     // XXX Should be called from vtxCommonInit()?
     if (feature(FEATURE_VTXRC)) {
+        dprintf(("init: calling vtxRcInit\r\n"));
         vtxRcInit(vtxConfig());
     }
 # endif

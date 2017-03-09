@@ -23,6 +23,7 @@
 #ifdef VTX_RTC6705
 
 #include "build/debug.h"
+#include "drivers/vtx_debug.h"
 
 #include "fc/config.h"
 
@@ -95,9 +96,7 @@ void gen6705SetFreq(uint16_t channel_freq)
 
 void gen6705SetBandChan(uint8_t band, uint8_t chan)
 {
-    debug[0]++;
-    debug[1] = band;
-    debug[2] = chan;
+    dprintf(("gen6705SetBandChan: band %d chan %d\r\n", band, chan));
 
     if (band < 1 || band > gen6705Device.numBand || chan < 1 || chan > gen6705Device.numChan)
         return;

@@ -564,6 +564,8 @@ void resetVtxConfig(vtxConfig_t *vtxConfig)
     vtxConfig->vtx_channel = 1;
     vtxConfig->vtx_mhz = 5740;
     vtxConfig->vtx_power = 0;
+
+debug[3]++;
 }
 #endif
 

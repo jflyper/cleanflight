@@ -154,6 +154,13 @@ typedef struct
 
 typedef struct
 {
+    uint8_t *val;
+    uint8_t max;
+    char **names;
+} OSD_mutableTAB_t;
+
+typedef struct
+{
     char *val;
 } OSD_String_t;
 

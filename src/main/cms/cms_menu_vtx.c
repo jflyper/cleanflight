@@ -41,10 +41,10 @@
 
 #ifdef CMS
 
-#ifdef VTX_GEN6705
+#ifdef VTX_GEN6705 // XXX Not really for gen6705
 
 static bool featureRead = false;
-static uint8_t cmsx_featureVtxRc = 0, cmsx_vtxBand, cmsx_vtxChannel;
+static uint8_t cmsx_featureVtxRc = 0; //, cmsx_vtxBand, cmsx_vtxChannel;
 
 static long cmsx_Vtx_FeatureRead(void)
 {
@@ -125,6 +125,8 @@ static void vtxCmsUpdateStatusString(void)
     vtxCmsStatusString[3] = vtx58ChannelNames[vtxCurChan][0];
     vtxCmsStatusString[4] = ' ';
 
+    // XXX Power is missing
+
     vtxCurFreq = vtx58FreqTable[vtxCurBand - 1][vtxCurChan - 1];
     tfp_sprintf(&vtxCmsStatusString[5], "%4d", vtxCurFreq);
 }
@@ -133,22 +135,6 @@ static void vtxCmsUpdateFreqRef(void)
 {
     if (vtxCmsBand > 0 && vtxCmsChan > 0)
         vtxCmsFreqRef = vtx58FreqTable[vtxCmsBand - 1][vtxCmsChan - 1];
-}
-
-static long cmsx_Vtx_onEnter(void)
-{
-    cmsx_Vtx_FeatureRead();
-    cmsx_Vtx_ConfigRead();
-
-    (void)gen6705GetBandChan(&vtxCurBand, &vtxCurChan);
-
-    vtxCmsUpdateStatusString();
-
-    vtxCmsBand = vtxCurBand;
-    vtxCmsChan = vtxCurChan;
-    vtxCmsUpdateFreqRef();
-
-    return 0;
 }
 
 static uint8_t vtxCmsFselMode;
@@ -217,10 +203,11 @@ static long vtxCmsCommence(displayPort_t *pDisp, const void *self)
     UNUSED(pDisp);
     UNUSED(self);
 
-    gen6705SetBandChan(vtxCmsBand, vtxCmsChan);
-    //gen6705SetRFPower(vtxPowerTable[trampCmsPower-1]);
+    vtxCommonSetBandChan(vtxCmsBand, vtxCmsChan);
+    //vtxCommonSetRFPower(vtxPowerTable[trampCmsPower-1]); XXX Not yet
 
-    gen6705GetBandChan(&vtxCurBand, &vtxCurChan);
+    vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan);
+    //vtxCommonGetRFPower(vtxPowerTable[trampCmsPower-1]); XXX Not yet
     vtxCmsUpdateStatusString();
 
     return MENU_CHAIN_BACK;
@@ -231,12 +218,21 @@ static OSD_TAB_t vtxCmsEntChan = { &vtxCmsChan, 8, vtx58ChannelNames, NULL };
 static OSD_UINT16_t vtxCmsEntFreqRef = { &vtxCmsFreqRef, 5600, 5900, 0 };
 
 static const char * const vtxCmsPowerNames[] = {
+//static char * vtxCmsPowerNames[] = {
     "MIN ",
     "LOW ",
     "HIGH",
-    "MAX"
+    "MAX "
 };
 
+static char * vtxCmsPowerNamesAlt[] = {
+    "ALTMIN ",
+    "ALTLOW ",
+    "ALTHIGH",
+    "ALTMAX "
+};
+
+//static OSD_mutableTAB_t vtxCmsEntPower = { &vtxCmsPower, 4, vtxCmsPowerNames, NULL };
 static OSD_TAB_t vtxCmsEntPower = { &vtxCmsPower, 4, vtxCmsPowerNames, NULL };
 
 static long vtxCmsConfigPower(displayPort_t *pDisp, const void *self)
@@ -270,6 +266,7 @@ static OSD_Entry cmsx_menuVtxEntries[] =
     { "BAND", OME_TAB, vtxCmsConfigBand, &vtxCmsEntBand, 0 },
     { "CHAN", OME_TAB, vtxCmsConfigChan, &vtxCmsEntChan, 0 },
     { "(FREQ)", OME_UINT16, NULL, &vtxCmsEntFreqRef, DYNAMIC},
+    //{ "POWER", OME_TAB, vtxCmsConfigPower, &vtxCmsEntPower, 0 },
     { "POWER", OME_TAB, vtxCmsConfigPower, &vtxCmsEntPower, 0 },
     { "SET",    OME_Submenu, cmsMenuChange, &vtxCmsMenuCommence, 0 },
     { "CONFIG", OME_Submenu, cmsMenuChange, &vtxCmsMenuConfig, 0 },
@@ -281,6 +278,27 @@ static OSD_Entry cmsx_menuVtxEntries[] =
     {"BACK", OME_Back, NULL, NULL, 0},
     {NULL, OME_END, NULL, NULL, 0}
 };
+
+static long cmsx_Vtx_onEnter(void)
+{
+#if 0
+    // Test writability of vtxCmsEntPower
+    vtxCmsEntPower.names = vtxCmsPowerNamesAlt;
+#endif
+
+    cmsx_Vtx_FeatureRead();
+    cmsx_Vtx_ConfigRead();
+
+    if (vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan)) {
+
+        vtxCmsUpdateStatusString();
+
+        vtxCmsBand = vtxCurBand;
+        vtxCmsChan = vtxCurChan;
+        vtxCmsUpdateFreqRef();
+    }
+    return 0;
+}
 
 CMS_Menu cmsx_menuVtx = {
     .GUARD_text = "MENUVTXBC",
