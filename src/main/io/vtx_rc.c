@@ -32,7 +32,8 @@
 
 //External dependencies
 #include "config/config_master.h"
-#include "config/config_eeprom.h"
+#include "fc/config.h"
+//#include "config/config_eeprom.h"
 #include "drivers/vtx_common.h"
 #include "fc/runtime_config.h"
 #include "io/beeper.h"
@@ -49,6 +50,15 @@ static uint8_t curChan;
 
 static uint8_t reqBand;
 static uint8_t reqChan;
+
+// Multiple beeps version of saveConfigAndNotify.
+// XXX Should be consolidated with saveConfigAndNotify?
+static void vtxRcSaveConfigAndNotify(int beepCount)
+{
+    writeEEPROM();
+    readEEPROM();
+    beeperConfirmationBeeps(beepCount);
+}
 
 static void vtxRcChangeBand(int delta)
 {
@@ -68,7 +78,7 @@ static void vtxRcChangeBand(int delta)
     if (curBand != reqBand)
         return;
 
-    beeperConfirmationBeeps(curBand);
+    vtxRcSaveConfigAndNotify(curBand);
 }
 
 static void vtxRcChangeChan(int delta)
@@ -89,7 +99,7 @@ static void vtxRcChangeChan(int delta)
     if (curChan != reqChan)
         return;
 
-    beeperConfirmationBeeps(curChan);
+    vtxRcSaveConfigAndNotify(curChan);
 }
 
 void vtxRcIncrementBand(void)

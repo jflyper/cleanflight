@@ -9,7 +9,7 @@ typedef struct gen6705Device_s {
 
 void gen6705RegisterDevice(gen6705Device_t *gen6705Device);
 
-void gen6705Init(void);
+void gen6705Init(vtxConfig_t *pVtxConfigToUse);
 
 void gen6705SetBandChan(uint8_t band, uint8_t chan);
 bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan);

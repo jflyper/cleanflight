@@ -29,7 +29,7 @@
 #define LED0   PB7
 #define LED1   PB14
 
-//#define BEEPER   PB2
+#define BEEPER   PB2
 //#define BEEPER_INVERTED
 
 #define ACC
@@ -146,7 +146,7 @@
 #define LED_STRIP
 
 #define VTX_COMMON_DPRINTF
-#define DPRINTF_SERIAL_PORT SERIAL_PORT_USART2
+#define DPRINTF_SERIAL_PORT SERIAL_PORT_USART3 // STLINK VCP
 
 #undef VTX_SMARTAUDIO
 #undef VTX_TRAMP

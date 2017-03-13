@@ -115,6 +115,8 @@ static OSD_Entry menuFeaturesEntries[] =
 static long cmsx_SetupFeaturesMenu(void)
 {
     // XXX Setup menuFeaturesEntries to include the only active VTX menu.
+
+    return 0;
 }
 
 static CMS_Menu menuFeatures = {

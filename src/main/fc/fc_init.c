@@ -431,7 +431,7 @@ void init(void)
         || vtxConfig()->vtx_device == VTX_DEVICE_RTC6705_SOFTSPI) {
         // Generic RTC6705 driver; after lower level drivers are initialized.
         dprintf(("init: calling gen6705Init\r\n"));
-        gen6705Init();
+        gen6705Init(vtxConfig());
     }
 # endif
 

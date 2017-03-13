@@ -156,8 +156,8 @@ typedef struct
 {
     uint8_t *val;
     uint8_t max;
-    char **names;
-} OSD_mutableTAB_t;
+    char * const *names;
+} OSD_TAB_mutable_t;
 
 typedef struct
 {

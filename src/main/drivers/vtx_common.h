@@ -23,10 +23,11 @@
 
 typedef struct vtxConfig_s {
     uint8_t vtx_device; // External=0, Internal SPI=1, Internal SoftSPI=2
-    uint8_t vtx_mode;   // 0~2
+    uint8_t vtx_mode;   // 0=band/chan, 1=direct freq, 2=vtxrc
     uint8_t vtx_band;
     uint8_t vtx_channel;
     uint8_t vtx_power;
+    uint8_t vtx_opmodel;
     uint16_t vtx_mhz;
 } vtxConfig_t;
 
@@ -62,11 +63,14 @@ typedef struct vtxDevice_s {
     char **chanNames;    // char *chanNames[numChan]
     char **powerNames;   // char *powerNames[numPower]
 
+/*
     uint8_t curBand;
     uint8_t curChan;
     uint8_t curPowerIndex;
+    uint8_t curFselMode;
     uint8_t curPitState; // 0 = non-PIT, 1 = PIT
-
+    uint16_t curFreq;
+*/
 } vtxDevice_t;
 
 // {set,get}BandChan: band and chan are 1 origin
@@ -102,13 +106,17 @@ void vtxCommonRegisterDevice(vtxDevice_t *pDevice);
 // VTable functions
 void vtxCommonProcess(uint32_t currentTimeUs);
 uint8_t vtxCommonGetDeviceType(void);
+
 void vtxCommonSetBandChan(uint8_t band, uint8_t chan);
 void vtxCommonSetFreq(uint16_t freq);
 void vtxCommonSetPowerByIndex(uint8_t level);
+void vtxCommonSetFselMode(uint8_t mode);
 void vtxCommonSetPitmode(uint8_t onoff);
+
 bool vtxCommonGetBandChan(uint8_t *pBand, uint8_t *pChan);
-void vtxCommonGetFreq(uint16_t *pFreq);
+bool vtxCommonGetFreq(uint16_t *pFreq);
 bool vtxCommonGetPowerIndex(uint8_t *pIndex);
+bool vtxCommonGetFselMode(uint8_t *pMode);
 bool vtxCommonGetPitmode(uint8_t *pOnoff);
 
 // V1.1 API

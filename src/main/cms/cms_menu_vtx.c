@@ -39,6 +39,8 @@
 #include "io/vtx_string.h"
 #include "io/vtx_gen6705.h"
 
+#include "drivers/vtx_debug.h"
+
 #ifdef CMS
 
 #ifdef VTX_GEN6705 // XXX Not really for gen6705
@@ -102,16 +104,20 @@ static long cmsx_Vtx_onExit(const OSD_Entry *self)
     return 0;
 }
 
-uint8_t vtxCurBand;
-uint8_t vtxCurChan;
-uint16_t vtxCurFreq;
-uint8_t vtxCurPower;
+// Device status
+static uint8_t vtxCurBand;
+static uint8_t vtxCurChan;
+static uint16_t vtxCurFreq;
+static uint8_t vtxCurPower;
+static uint8_t vtxCurFselMode;
 
-uint8_t vtxCmsBand;
-uint8_t vtxCmsChan;
-uint16_t vtxCmsFreqRef;
-uint16_t vtxCmsFreq;
-uint8_t vtxCmsPower;
+// CMS values
+static uint8_t vtxCmsBand;
+static uint8_t vtxCmsChan;
+static uint16_t vtxCmsFreq;
+static uint8_t vtxCmsPower;
+static uint16_t vtxCmsFreqRef;
+static uint8_t vtxCmsFselMode;
 
 char vtxCmsStatusString[31] = "- -- ---- ----";
 //                             m bc ffff pppp
@@ -121,14 +127,58 @@ static void vtxCmsUpdateStatusString(void)
 {
     vtxCmsStatusString[0] = '*'; // Place holder for opmodel
     vtxCmsStatusString[1] = ' ';
-    vtxCmsStatusString[2] = vtx58BandLetter[vtxCurBand];
-    vtxCmsStatusString[3] = vtx58ChannelNames[vtxCurChan][0];
+
+    switch (vtxCurFselMode) {
+    case 0: // band/chan
+    case 2: // rc
+        vtxCmsStatusString[2] = vtx58BandLetter[vtxCurBand];
+        vtxCmsStatusString[3] = vtx58ChannelNames[vtxCurChan][0];
+        break;
+
+    case 1: // direct
+        vtxCmsStatusString[2] = vtxCmsStatusString[3] = '-';
+        break;
+    }
+
     vtxCmsStatusString[4] = ' ';
 
     // XXX Power is missing
 
-    vtxCurFreq = vtx58FreqTable[vtxCurBand - 1][vtxCurChan - 1];
-    tfp_sprintf(&vtxCmsStatusString[5], "%4d", vtxCurFreq);
+    switch (vtxCurFselMode) {
+    case 0: // band/chan
+    case 2: // rc
+        vtxCurFreq = vtx58FreqTable[vtxCurBand - 1][vtxCurChan - 1];
+        tfp_sprintf(&vtxCmsStatusString[5], "%4d", vtxCurFreq);
+        break;
+
+    case 1:
+        tfp_sprintf(&vtxCmsStatusString[5], "%4d", vtxCurFreq);
+        break;
+    }
+}
+
+static void vtxCmsUpdateStatus(void)
+{
+    switch (vtxCurFselMode) {
+    case 0: // band/chan
+    case 2: // direct
+        if (vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan)) {
+            dprintf(("vtxCmsUpdateStatus: got vtxCurBand %d vtxCurChan %d\r\n", vtxCurBand, vtxCurChan));
+            vtxCmsBand = vtxCurBand;
+            vtxCmsChan = vtxCurChan;
+        } else {
+            dprintf(("vtxCmsUpdateStatus: vtxCommonGetBandChan failed\r\n"));
+        }
+        break;
+
+    case 1: // direct
+        if (vtxCommonGetFreq(&vtxCurFreq)) {
+            vtxCmsFreq = vtxCurFreq;
+        }
+        break;
+    }
+
+    // XXX Handle power also
 }
 
 static void vtxCmsUpdateFreqRef(void)
@@ -136,8 +186,6 @@ static void vtxCmsUpdateFreqRef(void)
     if (vtxCmsBand > 0 && vtxCmsChan > 0)
         vtxCmsFreqRef = vtx58FreqTable[vtxCmsBand - 1][vtxCmsChan - 1];
 }
-
-static uint8_t vtxCmsFselMode;
 
 static const char * const vtxCmsFselModeNames[] = {
     "BANDCHAN",
@@ -151,6 +199,12 @@ static long vtxCmsConfigFselMode(displayPort_t *pDisp, const void *self)
 {
     UNUSED(pDisp);
     UNUSED(self);
+
+    vtxCommonSetFselMode(vtxCmsFselMode);
+    vtxCommonGetFselMode(&vtxCurFselMode);
+
+    vtxCmsUpdateStatus();
+
     return 0;
 }
 
@@ -203,42 +257,67 @@ static long vtxCmsCommence(displayPort_t *pDisp, const void *self)
     UNUSED(pDisp);
     UNUSED(self);
 
-    vtxCommonSetBandChan(vtxCmsBand, vtxCmsChan);
-    //vtxCommonSetRFPower(vtxPowerTable[trampCmsPower-1]); XXX Not yet
+    switch (vtxCurFselMode) {
+    case 0: // band/chan
+        dprintf(("vtxCmsCommence: band/chan mode\r\n"));
+        vtxCommonSetBandChan(vtxCmsBand, vtxCmsChan);
+        vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan);
+        break;
 
-    vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan);
+    case 1: // direct
+        dprintf(("vtxCmsCommence: direct mode\r\n"));
+        vtxCommonSetFreq(vtxCmsFreq);
+        vtxCommonGetFreq(&vtxCurFreq);
+        break;
+
+    case 2: // rc
+        dprintf(("vtxCmsCommence: direct mode\r\n"));
+        break;
+    }
+
+    //vtxCommonSetRFPower(vtxPowerTable[trampCmsPower-1]); XXX Not yet
     //vtxCommonGetRFPower(vtxPowerTable[trampCmsPower-1]); XXX Not yet
+
     vtxCmsUpdateStatusString();
 
     return MENU_CHAIN_BACK;
 }
 
-static OSD_TAB_t vtxCmsEntBand = { &vtxCmsBand, 5, vtx58BandNames, NULL };
-static OSD_TAB_t vtxCmsEntChan = { &vtxCmsChan, 8, vtx58ChannelNames, NULL };
+static OSD_TAB_t vtxCmsEntBand = { &vtxCmsBand, 4, vtx58BandNames, NULL };
+static OSD_TAB_t vtxCmsEntChan = { &vtxCmsChan, 7, vtx58ChannelNames, NULL };
 static OSD_UINT16_t vtxCmsEntFreqRef = { &vtxCmsFreqRef, 5600, 5900, 0 };
 
-static const char * const vtxCmsPowerNames[] = {
-//static char * vtxCmsPowerNames[] = {
+static const char * const vtxCmsPowerNames[] =
+//static char * const vtxCmsPowerNames[] =
+{
+    "----",
     "MIN ",
     "LOW ",
     "HIGH",
     "MAX "
 };
 
-static char * vtxCmsPowerNamesAlt[] = {
+#if 0
+static char * const vtxCmsPowerNamesAlt[] = {
+    "-------",
     "ALTMIN ",
     "ALTLOW ",
     "ALTHIGH",
     "ALTMAX "
 };
+#endif
 
-//static OSD_mutableTAB_t vtxCmsEntPower = { &vtxCmsPower, 4, vtxCmsPowerNames, NULL };
-static OSD_TAB_t vtxCmsEntPower = { &vtxCmsPower, 4, vtxCmsPowerNames, NULL };
+//static OSD_TAB_mutable_t vtxCmsEntPower = { &vtxCmsPower, 3, vtxCmsPowerNames, NULL };
+static OSD_TAB_t vtxCmsEntPower = { &vtxCmsPower, 4, vtxCmsPowerNames };
 
 static long vtxCmsConfigPower(displayPort_t *pDisp, const void *self)
 {   
     UNUSED(pDisp);
     UNUSED(self);
+
+    if (vtxCmsPower == 0)
+        // Bounce back
+        vtxCmsPower = 1;
 
     return 0;
 }
@@ -259,14 +338,13 @@ static CMS_Menu vtxCmsMenuCommence = {
     .entries = vtxCmsMenuCommenceEntries,
 };
 
-static OSD_Entry cmsx_menuVtxEntries[] =
+static OSD_Entry cmsx_menuVtxBandChanModeEntries[] =
 {
     { "-- VTX6705 --", OME_Label, NULL, NULL, 0},
     { "",              OME_Label, NULL, vtxCmsStatusString, DYNAMIC },
     { "BAND", OME_TAB, vtxCmsConfigBand, &vtxCmsEntBand, 0 },
     { "CHAN", OME_TAB, vtxCmsConfigChan, &vtxCmsEntChan, 0 },
-    { "(FREQ)", OME_UINT16, NULL, &vtxCmsEntFreqRef, DYNAMIC},
-    //{ "POWER", OME_TAB, vtxCmsConfigPower, &vtxCmsEntPower, 0 },
+    { "FREQ", OME_UINT16, NULL, &vtxCmsEntFreqRef, DYNAMIC},
     { "POWER", OME_TAB, vtxCmsConfigPower, &vtxCmsEntPower, 0 },
     { "SET",    OME_Submenu, cmsMenuChange, &vtxCmsMenuCommence, 0 },
     { "CONFIG", OME_Submenu, cmsMenuChange, &vtxCmsMenuConfig, 0 },
@@ -279,6 +357,29 @@ static OSD_Entry cmsx_menuVtxEntries[] =
     {NULL, OME_END, NULL, NULL, 0}
 };
 
+static OSD_Entry cmsx_menuVtxDirectModeEntries[] =
+{
+    { "-- VTX6705 --", OME_Label, NULL, NULL, 0},
+    { "",              OME_Label, NULL, vtxCmsStatusString, DYNAMIC },
+    { "FREQ",          OME_UINT16, NULL, &(OSD_UINT16_t){ &vtxCmsFreq, 5000, 5900, 1 }, 0 },
+    { "POWER", OME_TAB, vtxCmsConfigPower, &vtxCmsEntPower, 0 },
+    { "SET",    OME_Submenu, cmsMenuChange, &vtxCmsMenuCommence, 0 },
+    { "CONFIG", OME_Submenu, cmsMenuChange, &vtxCmsMenuConfig, 0 },
+    {"BACK", OME_Back, NULL, NULL, 0},
+    {NULL, OME_END, NULL, NULL, 0}
+};
+
+static OSD_Entry cmsx_menuVtxRcModeEntries[] =
+{
+    { "-- VTX6705 --", OME_Label, NULL, NULL, 0},
+    { "",              OME_Label, NULL, vtxCmsStatusString, DYNAMIC },
+    { "CONFIG", OME_Submenu, cmsMenuChange, &vtxCmsMenuConfig, 0 },
+    {"BACK", OME_Back, NULL, NULL, 0},
+    {NULL, OME_END, NULL, NULL, 0}
+};
+
+CMS_Menu cmsx_menuVtx; // Forward
+
 static long cmsx_Vtx_onEnter(void)
 {
 #if 0
@@ -286,17 +387,41 @@ static long cmsx_Vtx_onEnter(void)
     vtxCmsEntPower.names = vtxCmsPowerNamesAlt;
 #endif
 
+    if (vtxCommonGetFselMode(&vtxCurFselMode)) {
+        dprintf(("cmsx_Vtx_onEnter: got vtxCurFselMode %d\r\n", vtxCurFselMode));
+        vtxCmsFselMode = vtxCurFselMode;
+    } else {
+        dprintf(("cmsx_Vtx_onEnter: vtxCommonGetFselMode failed\r\n"));
+    }
+
+    switch (vtxCurFselMode) {
+    case 0: // Band/Chan
+        cmsx_menuVtx.entries = cmsx_menuVtxBandChanModeEntries;
+        if (vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan)) {
+            vtxCmsBand = vtxCurBand;
+            vtxCmsChan = vtxCurChan;
+            vtxCmsUpdateFreqRef();
+        }
+        break;
+
+    case 1: // Direct
+        cmsx_menuVtx.entries = cmsx_menuVtxDirectModeEntries;
+        if (vtxCommonGetFreq(&vtxCurFreq)) {
+            dprintf(("cmsx_Vtx_onEnter: got vtxCurFreq %d\r\n", vtxCurFreq));
+            vtxCmsFreq = vtxCurFreq;
+        }
+        break;
+
+    case 2: // VTXRC
+        cmsx_menuVtx.entries = cmsx_menuVtxRcModeEntries;
+        break;
+    }
+
     cmsx_Vtx_FeatureRead();
     cmsx_Vtx_ConfigRead();
 
-    if (vtxCommonGetBandChan(&vtxCurBand, &vtxCurChan)) {
+   vtxCmsUpdateStatusString();
 
-        vtxCmsUpdateStatusString();
-
-        vtxCmsBand = vtxCurBand;
-        vtxCmsChan = vtxCurChan;
-        vtxCmsUpdateFreqRef();
-    }
     return 0;
 }
 
@@ -306,7 +431,7 @@ CMS_Menu cmsx_menuVtx = {
     .onEnter = cmsx_Vtx_onEnter,
     .onExit= cmsx_Vtx_onExit,
     .onGlobalExit = cmsx_Vtx_FeatureWriteback,
-    .entries = cmsx_menuVtxEntries
+    .entries = NULL,
 };
 #endif // VTX_RTC6705
 

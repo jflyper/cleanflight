@@ -15,6 +15,11 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+gen6705 provides an 'intelligent' VTX with memories about modes,
+band, channel and transmitting power.
+*/
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -34,7 +39,8 @@
 #include "drivers/bus_spi.h"
 #include "drivers/io.h"
 
-gen6705Device_t *pDevice = NULL;
+static gen6705Device_t *pDevice = NULL;
+static vtxConfig_t *pVtxConfig = NULL;
 
 // Downward API
 
@@ -82,41 +88,106 @@ static vtxDevType_e gen6705GetDeviceType(void)
     return VTXDEV_GEN6705;
 }
 
-void gen6705SetFreq(uint16_t channel_freq)
+void gen6705SetFselMode(uint8_t mode)
 {
-    uint32_t freq = (uint32_t)channel_freq * 1000;
+    dprintf(("gen6705SetFselMode: mode %d\r\n", mode));
+
+    pVtxConfig->vtx_mode = mode;
+}
+
+static void gen6705SetFreqRegisters(uint16_t freq)
+{
+    dprintf(("gen6705SetFreqRegisters: freq %d\r\n", freq));
+
+    uint32_t wfreq = (uint32_t)freq * 1000;
     uint32_t N, A;
 
-    freq /= 40;
-    N = freq / 64;
-    A = freq % 64;
+    wfreq /= 40;
+    N = wfreq / 64;
+    A = wfreq % 64;
     gen6705WriteRegister(0, 400);
     gen6705WriteRegister(1, (N << 7) | A);
 }
 
-void gen6705SetBandChan(uint8_t band, uint8_t chan)
+static void _gen6705SetFreq(uint16_t freq)
 {
-    dprintf(("gen6705SetBandChan: band %d chan %d\r\n", band, chan));
+    dprintf(("_gen6705SetFreq: freq %d\r\n", freq));
+
+    gen6705SetFreqRegisters(freq);
+}
+
+void gen6705SetFreq(uint16_t freq)
+{
+    _gen6705SetFreq(freq);
+
+    pVtxConfig->vtx_mhz = freq;
+}
+
+static void _gen6705SetBandChan(uint8_t band, uint8_t chan)
+{
+    dprintf(("_gen6705SetBandChan: band %d chan %d\r\n", band, chan));
 
     if (band < 1 || band > gen6705Device.numBand || chan < 1 || chan > gen6705Device.numChan)
         return;
 
-    gen6705SetFreq(vtx58FreqTable[band - 1][chan - 1]);
+    gen6705SetFreqRegisters(vtx58FreqTable[band - 1][chan - 1]);
 
-    gen6705Device.curBand = band;
-    gen6705Device.curChan = chan;
+}
+
+void gen6705SetBandChan(uint8_t band, uint8_t chan)
+{
+    _gen6705SetBandChan(band, chan);
+
+    pVtxConfig->vtx_band = band;
+    pVtxConfig->vtx_channel = chan;
 }
 
 bool gen6705GetBandChan(uint8_t *pBand, uint8_t *pChan)
 {
-    *pBand = gen6705Device.curBand;
-    *pChan = gen6705Device.curChan;
+    *pBand = pVtxConfig->vtx_band;
+    *pChan = pVtxConfig->vtx_channel;
 
     return true;
 }
 
-void gen6705Init(void)
+bool gen6705GetFreq(uint16_t *pFreq)
 {
+    *pFreq = pVtxConfig->vtx_mhz;
+
+    return true;
+}
+
+bool gen6705GetFselMode(uint8_t *pMode)
+{
+    *pMode = pVtxConfig->vtx_mode;
+
+    return true;
+}
+
+void gen6705Init(vtxConfig_t *pVtxConfigToUse)
+{
+    if (!pDevice)
+        return;
+
+    pVtxConfig = pVtxConfigToUse;
+
+    // Initialize per current configuration
+    // XXX Take care the power/pit mode
+
+    switch (pVtxConfig->vtx_mode) {
+    case 0: // band/chan
+        _gen6705SetBandChan(pVtxConfig->vtx_band, pVtxConfig->vtx_channel);
+        break;
+
+    case 1: // direct
+        _gen6705SetFreq(pVtxConfig->vtx_mhz);
+        break;
+
+    case 2: // vtxrc
+        // XXX What is the default for VTXRC???
+        break;
+    }
+
     vtxCommonRegisterDevice(&gen6705Device);
 }
 
@@ -133,10 +204,14 @@ static vtxVTable_t gen6705VTable = {
     .getDeviceType = gen6705GetDeviceType,
     .isReady = gen6705IsReady,
     .setBandChan = gen6705SetBandChan,
+    .setFreq = gen6705SetFreq,
     //.setPowerByIndex = gen6705SetPowerByIndex,
+    .setFselMode = gen6705SetFselMode,
     //.setPitmode = gen6705SetPitmode,
     .getBandChan = gen6705GetBandChan,
+    .getFreq = gen6705GetFreq,
     //.getPowerIndex = gen6705GetPowerIndex,
+    .getFselMode = gen6705GetFselMode,
     //.getPitmode = gen6705GetPitmode,
 };
 #endif

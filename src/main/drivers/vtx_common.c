@@ -27,12 +27,12 @@
 
 #if defined(VTX_COMMON)
 
-#include "fc/config.h"
+//#include "fc/config.h"
 #include "vtx_common.h"
 #include "vtx_debug.h"
 
-vtxDevice_t *vtxDevice = NULL;
-vtxConfig_t *pVtxConfig = NULL;
+vtxDevice_t *vtxDevice = NULL;  // Underlying vtx device
+vtxConfig_t *pVtxConfig = NULL; // Configuration
 
 
 // Whatever registered last will win
@@ -86,15 +86,26 @@ void vtxCommonSetBandChan(uint8_t band, uint8_t chan)
     
     if (vtxDevice->vTable->setBandChan)
         vtxDevice->vTable->setBandChan(band, chan);
+}
 
-    pVtxConfig->vtx_band = band;
-    pVtxConfig->vtx_channel = chan;
+void vtxCommonSetFreq(uint16_t freq)
+{
+    dprintf(("vtxCommonSetFreq: top\r\n"));
+    if (!vtxDevice)
+        return;
 
-    dprintf(("vtxCommonSetBandChan: saving config\r\n"));
-    saveConfigAndNotify();
+    dprintf(("vtxCommonSetFreq: checking vtx_mode\r\n"));
+    if (pVtxConfig->vtx_mode != 1)
+        return;
 
-    //writeEEPROM();
-    //readEEPROM();
+    dprintf(("vtxCommonSetFreq: checking freq range\r\n"));
+    if ((freq < 5600)|| (freq > 5950))
+        return;
+
+    dprintf(("vtxCommonSetFreq: setFreq\r\n"));
+
+    if (vtxDevice->vTable->setFreq)
+        vtxDevice->vTable->setFreq(freq);
 }
 
 // index is zero origin, zero = power off completely
@@ -108,31 +119,6 @@ void vtxCommonSetPowerByIndex(uint8_t index)
     
     if (vtxDevice->vTable->setPowerByIndex)
         vtxDevice->vTable->setPowerByIndex(index);
-
-    pVtxConfig->vtx_power = index;
-
-    writeEEPROM();
-    //readEEPROM();
-}
-
-void vtxCommonSetFreq(uint16_t freq)
-{
-    if (!vtxDevice)
-        return;
-
-    if (pVtxConfig->vtx_mode != 1)
-        return;
-
-    if ((freq < 5600)|| (freq > 5950))
-        return;
-
-    if (vtxDevice->vTable->setFreq)
-        vtxDevice->vTable->setFreq(freq);
-
-    pVtxConfig->vtx_mhz = freq;
-
-    writeEEPROM();
-    //readEEPROM();
 }
 
 // on = 1, off = 0
@@ -151,7 +137,7 @@ bool vtxCommonGetFselMode(uint8_t *pMode)
     if (!vtxDevice)
         return false;
 
-    if (vtxDevice->vTable->getBandChan)
+    if (vtxDevice->vTable->getFselMode)
         return vtxDevice->vTable->getFselMode(pMode);
     else
         return false;
@@ -164,6 +150,18 @@ bool vtxCommonGetBandChan(uint8_t *pBand, uint8_t *pChan)
 
     if (vtxDevice->vTable->getBandChan)
         return vtxDevice->vTable->getBandChan(pBand, pChan);
+    else
+        return false;
+}
+
+bool vtxCommonGetFreq(uint16_t *pFreq)
+{
+    if (!vtxDevice)
+        return false;
+
+    if (vtxDevice->vTable->getFreq) {
+        return vtxDevice->vTable->getFreq(pFreq);
+    }
     else
         return false;
 }
@@ -224,19 +222,25 @@ void vtxCommonInit(vtxConfig_t *pVtxConfigToUse)
 
     // Initialize vtxDevice according to the vtxConfig.
 
+#if 0
     switch (pVtxConfig->vtx_mode) {
     case 0: // Band/channel mode
+        dprintf(("vtxCommonInit: band/chan mode, band %d chan %d\r\n", pVtxConfig->vtx_band, pVtxConfig->vtx_channel));
         vtxCommonSetFselMode(0);
         vtxCommonSetBandChan(pVtxConfig->vtx_band, pVtxConfig->vtx_channel);
         break;
 
     case 1: // Direct frequency mode
+        dprintf(("vtxCommonInit: direct mode, freq %d\r\n", pVtxConfig->vtx_mhz));
         vtxCommonSetFselMode(1);
+        vtxCommonSetFreq(pVtxConfig->vtx_mhz);
         break;
 
     case 2: // AUX switch mode, turn on band/channel mode
         vtxCommonSetFselMode(0);
         break;
     }
+#endif
 }
+
 #endif
