@@ -32,12 +32,11 @@ extern serialPort_t *debugSerialPort;
 
 #include "build/debug.h"
 
-#include "io/vtx_gen6705.h"
-
 #include "drivers/io.h"
 #include "drivers/system.h"
 #include "drivers/bus_spi_soft.h"
 #include "drivers/bus_spi.h"
+#include "drivers/vtx_gen6705.h"
 #include "drivers/vtx_rtc6705_softspi.h"
 
 #define RTC6705_SPICLK_ON     IOHi(rtc6705ClkPin)

@@ -6,7 +6,5 @@
 #define PA_BS_MASK          0x0007
 
 #define PA_CONTROL_DEFAULT  0x4FBD
-
-#define CHANNELS_PER_BAND   8
-#define BANDS_NUMBER        5
-
+// PA_CONTROL_MIN, originated from SIRINFPV code.
+#define PA_CONTROL_MIN      ((PA_CONTROL_DEFAULT | PD_Q5G_MASK) & (~(PA5G_PW_MASK | PA5G_BS_MASK)))

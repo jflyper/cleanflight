@@ -31,6 +31,8 @@ typedef struct vtxConfig_s {
     uint16_t vtx_mhz;
 } vtxConfig_t;
 
+vtxConfig_t vtxConfig;
+
 // Device type for vtx_device CLI var.
 // Initialized based on per target RTC6705 driver usage, can be modified by CLI.
 typedef enum {
@@ -49,28 +51,24 @@ typedef enum {
     VTXDEV_UNKNOWN    = 0xFF,
 } vtxDevType_e;
 
-struct vtxVTable_s;
-
-typedef struct vtxDevice_s {
-    const struct vtxVTable_s *vTable;
-
+typedef struct vtxDeviceParam_s {
     uint8_t numBand;
     uint8_t numChan;
     uint8_t numPower;
-
+    uint16_t freqMin;
+    uint16_t freqMax;
     uint16_t *freqTable;  // Array of [numBand][numChan]
     char **bandNames;    // char *bandNames[numBand]
     char **chanNames;    // char *chanNames[numChan]
     char **powerNames;   // char *powerNames[numPower]
+    char const *bandLetters;   // char bandLetters[numPower]
+} vtxDeviceParam_t;
 
-/*
-    uint8_t curBand;
-    uint8_t curChan;
-    uint8_t curPowerIndex;
-    uint8_t curFselMode;
-    uint8_t curPitState; // 0 = non-PIT, 1 = PIT
-    uint16_t curFreq;
-*/
+struct vtxVTable_s;
+
+typedef struct vtxDevice_s {
+    const struct vtxVTable_s *vTable;
+    vtxDeviceParam_t devParam; // Mutable so SmartAudio driver can rewrite some fields.
 } vtxDevice_t;
 
 // {set,get}BandChan: band and chan are 1 origin
@@ -120,4 +118,4 @@ bool vtxCommonGetFselMode(uint8_t *pMode);
 bool vtxCommonGetPitmode(uint8_t *pOnoff);
 
 // V1.1 API
-bool vtxCommonGetParam(uint8_t *pNumBand, uint8_t *pNumChan, uint8_t *pNumPower, char ***pBandNames, char ***pChanNames, char ***pPowerNames);
+vtxDeviceParam_t *vtxCommonGetDeviceParam(void);

@@ -5,6 +5,7 @@
 // Downward API
 typedef struct gen6705Device_s {
     void (*writeRegister)(uint8_t reg, uint32_t data);
+    void (*powerControl)(uint8_t powerIndex);
 } gen6705Device_t;
 
 void gen6705RegisterDevice(gen6705Device_t *gen6705Device);

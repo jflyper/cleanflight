@@ -71,6 +71,7 @@ uint8_t cliMode = 0;
 #include "drivers/vcd.h"
 #include "drivers/display.h"
 #include "drivers/vtx_common.h"
+#include "drivers/vtx_gen6705.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
@@ -93,7 +94,6 @@ uint8_t cliMode = 0;
 #include "io/osd.h"
 #include "io/serial.h"
 #include "io/servos.h"
-#include "io/vtx_gen6705.h"
 #include "io/vtx_rc.h"
 
 #include "rx/rx.h"
@@ -2591,10 +2591,15 @@ static void cliVtxRc(char *cmdline)
     uint8_t numBand;
     uint8_t numChannel;
 
-    if (!vtxCommonGetParam(&numBand, &numChannel, NULL, NULL, NULL, NULL)) {
+    vtxDeviceParam_t *pDevParam = vtxCommonGetDeviceParam();
+
+    if (!pDevParam) {
         cliPrint("No VTX device\r\n");
         return;
     }
+
+    numBand = pDevParam->numBand;
+    numChannel = pDevParam->numChan;
 
     if (isEmpty(cmdline)) {
         printVtxRc(DUMP_MASTER, NULL);

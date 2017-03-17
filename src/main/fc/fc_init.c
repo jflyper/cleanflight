@@ -58,6 +58,7 @@
 #include "drivers/transponder_ir.h"
 #include "drivers/exti.h"
 #include "drivers/bus_spi_soft.h"
+#include "drivers/vtx_gen6705.h"
 #include "drivers/vtx_rtc6705_softspi.h"
 #include "drivers/vtx_rtc6705_spi.h"
 
@@ -92,7 +93,6 @@
 #include "io/transponder_ir.h"
 #include "io/osd.h"
 #include "io/displayport_msp.h"
-#include "io/vtx_gen6705.h"
 #include "io/vtx_smartaudio.h"
 #include "io/vtx_tramp.h"
 

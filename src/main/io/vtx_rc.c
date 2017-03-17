@@ -40,6 +40,8 @@
 
 static vtxConfig_t *pVtxConfig = NULL;
 
+static vtxDeviceParam_t *pDevParam = NULL;
+
 static uint8_t locked = 0;
 
 static uint8_t numBand;
@@ -62,7 +64,7 @@ static void vtxRcSaveConfigAndNotify(int beepCount)
 
 static void vtxRcChangeBand(int delta)
 {
-    if (!pVtxConfig && pVtxConfig->vtx_mode != 0)
+    if (!pDevParam || (!pVtxConfig && pVtxConfig->vtx_mode != 0))
         return;
 
     if (!vtxCommonGetBandChan(&curBand, &curChan))
@@ -83,7 +85,7 @@ static void vtxRcChangeBand(int delta)
 
 static void vtxRcChangeChan(int delta)
 {
-    if (!pVtxConfig && pVtxConfig->vtx_mode != 0)
+    if (!pDevParam || (!pVtxConfig && pVtxConfig->vtx_mode != 0))
         return;
 
     if (!vtxCommonGetBandChan(&curBand, &curChan))
@@ -124,6 +126,9 @@ void vtxRcDecrementChannel(void)
 
 void vtxRcUpdateActivatedChannel(void)
 {
+    if (!pDevParam)
+        return;
+
     if (ARMING_FLAG(ARMED)) {
         locked = 1;
     }
@@ -149,7 +154,9 @@ void vtxRcInit(vtxConfig_t *pVtxConfigToUse)
 {
     pVtxConfig = pVtxConfigToUse;
 
-    // XXX What if this call fail?
-    vtxCommonGetParam(&numBand, &numChannel, NULL, NULL, NULL, NULL);
+    if ((pDevParam = vtxCommonGetDeviceParam())) {
+        numBand = pDevParam->numBand;
+        numChannel = pDevParam->numChan;
+    }
 }
 #endif

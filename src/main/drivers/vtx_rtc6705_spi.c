@@ -31,11 +31,10 @@
 
 #include "common/maths.h"
 
-#include "io/vtx_gen6705.h"
-
 #include "drivers/io.h"
 #include "drivers/bus_spi.h"
 #include "drivers/system.h"
+#include "drivers/vtx_gen6705.h"
 #include "drivers/vtx_rtc6705_spi.h"
 
 #define DISABLE_RTC6705 GPIO_SetBits(RTC6705_CS_GPIO,   RTC6705_CS_PIN)

@@ -565,17 +565,14 @@ static void cmsTraverseGlobalExit(const CMS_Menu *pMenu)
     }
 }
 
+// XXX cmsMenuExit was modified to include "SAVE and EXIT" option; needs testing.
+
 long cmsMenuExit(displayPort_t *pDisplay, const void *ptr)
 {
-    if (ptr) {
-        displayClearScreen(pDisplay);
-
-        displayWrite(pDisplay, 5, 3, "REBOOTING...");
-        displayResync(pDisplay); // Was max7456RefreshAll(); why at this timing?
-
-        stopMotors();
-        stopPwmAllMotors();
-        delay(200);
+    int exitType = (int)ptr;
+    switch (exitType) {
+    case CMS_EXIT_SAVE:
+    case CMS_EXIT_SAVEREBOOT:
 
         cmsTraverseGlobalExit(&menuMain);
 
@@ -583,6 +580,10 @@ long cmsMenuExit(displayPort_t *pDisplay, const void *ptr)
             currentMenu->onExit((OSD_Entry *)NULL); // Forced exit
 
         saveConfigAndNotify();
+        break;
+
+    case CMS_EXIT:
+        break;
     }
 
     cmsInMenu = false;
@@ -590,14 +591,23 @@ long cmsMenuExit(displayPort_t *pDisplay, const void *ptr)
     displayRelease(pDisplay);
     currentMenu = NULL;
 
-    if (ptr)
+    if (exitType == CMS_EXIT_SAVEREBOOT) {
+        displayClearScreen(pDisplay);
+        displayWrite(pDisplay, 5, 3, "REBOOTING...");
+
+        displayResync(pDisplay); // Was max7456RefreshAll(); why at this timing?
+
+        stopMotors();
+        stopPwmAllMotors();
+        delay(200);
+
         systemReset();
+    }
 
     ENABLE_ARMING_FLAG(OK_TO_ARM);
 
     return 0;
 }
-
 
 // Stick/key detection and key codes
 
