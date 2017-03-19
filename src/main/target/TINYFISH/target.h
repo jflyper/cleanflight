@@ -46,16 +46,17 @@
 
 #if USB_VCP_ENABLED
   #define USE_VCP
-  #define USB_IO
   #define USBD_PRODUCT_STRING "tinyFISH"
-  #define SERIAL_PORT_COUNT 4
+  #define SERIAL_PORT_COUNT 6
 #else
-  #define SERIAL_PORT_COUNT 3
+  #define SERIAL_PORT_COUNT 5
 #endif
 
 #define USE_UART1
 #define USE_UART2
 #define USE_UART3
+#define USE_SOFTSERIAL1
+#define USE_SOFTSERIAL2
 
 #define UART1_TX_PIN            PB6
 #define UART1_RX_PIN            PB7
@@ -98,7 +99,6 @@
 #define ADC_INSTANCE                ADC3
 #define VBAT_SCALE_DEFAULT          100
 
-#define LED_STRIP
 #define WS2811_PIN                      PA8
 #define WS2811_TIMER                    TIM1
 #define WS2811_DMA_CHANNEL              DMA1_Channel2

@@ -27,6 +27,11 @@
 #include "common/color.h"
 #include "common/utils.h"
 
+#include "config/feature.h"
+#include "config/config_profile.h"
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
+
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
@@ -43,8 +48,10 @@
 #include "fc/cli.h"
 #include "fc/fc_dispatch.h"
 
-#include "flight/pid.h"
 #include "flight/altitudehold.h"
+#include "flight/imu.h"
+#include "flight/mixer.h"
+#include "flight/pid.h"
 
 #include "io/beeper.h"
 #include "io/dashboard.h"
@@ -65,16 +72,13 @@
 #include "sensors/battery.h"
 #include "sensors/compass.h"
 #include "sensors/gyro.h"
+#include "sensors/gyroanalyse.h"
 #include "sensors/sonar.h"
 #include "sensors/esc_sensor.h"
 
 #include "scheduler/scheduler.h"
 
 #include "telemetry/telemetry.h"
-
-#include "config/feature.h"
-#include "config/config_profile.h"
-#include "config/config_master.h"
 
 #ifdef USE_BST
 void taskBstMasterProcess(timeUs_t currentTimeUs);
@@ -94,7 +98,7 @@ static void taskUpdateAccelerometer(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
 
-    accUpdate(&accelerometerConfig()->accelerometerTrims);
+    accUpdate(&accelerometerConfigMutable()->accelerometerTrims);
 }
 
 static void taskHandleSerial(timeUs_t currentTimeUs)
@@ -128,7 +132,7 @@ static void taskUpdateBattery(timeUs_t currentTimeUs)
 
         if (ibatTimeSinceLastServiced >= IBATINTERVAL) {
             ibatLastServiced = currentTimeUs;
-            updateCurrentMeter(ibatTimeSinceLastServiced, &masterConfig.rxConfig, flight3DConfig()->deadband3d_throttle);
+            updateCurrentMeter(ibatTimeSinceLastServiced);
         }
     }
 }
@@ -161,7 +165,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
 static void taskUpdateCompass(timeUs_t currentTimeUs)
 {
     if (sensors(SENSOR_MAG)) {
-        compassUpdate(currentTimeUs, &compassConfig()->magZero);
+        compassUpdate(currentTimeUs, &compassConfigMutable()->magZero);
     }
 }
 #endif
@@ -201,7 +205,7 @@ static void taskTelemetry(timeUs_t currentTimeUs)
     telemetryCheckState();
 
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
-        telemetryProcess(currentTimeUs, &masterConfig.rxConfig, flight3DConfig()->deadband3d_throttle);
+        telemetryProcess(currentTimeUs);
     }
 }
 #endif
@@ -305,6 +309,9 @@ void fcTasksInit(void)
     setTaskEnabled(TASK_VTXCTRL, true);
 #endif
 #endif
+#ifdef USE_GYRO_DATA_ANALYSE
+    setTaskEnabled(TASK_GYRO_DATA_ANALYSE, true);
+#endif
 }
 
 cfTask_t cfTasks[TASK_COUNT] = {
@@ -406,7 +413,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_SONAR] = {
         .taskName = "SONAR",
         .taskFunc = sonarUpdate,
-        .desiredPeriod = TASK_PERIOD_MS(70),        // 70ms required so that SONAR pulses do not interfer with each other
+        .desiredPeriod = TASK_PERIOD_MS(70),        // 70ms required so that SONAR pulses do not interfere with each other
         .staticPriority = TASK_PRIORITY_LOW,
     },
 #endif
@@ -476,7 +483,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_ESC_SENSOR] = {
         .taskName = "ESC_SENSOR",
         .taskFunc = escSensorProcess,
-        .desiredPeriod = TASK_PERIOD_HZ(100),       // 100 Hz every 10ms
+        .desiredPeriod = TASK_PERIOD_HZ(100),       // 100 Hz, 10ms
         .staticPriority = TASK_PRIORITY_LOW,
     },
 #endif
@@ -503,8 +510,17 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_VTXCTRL] = {
         .taskName = "VTXCTRL",
         .taskFunc = taskVtxControl,
-        .desiredPeriod = TASK_PERIOD_HZ(5),          // 5Hz @200msec
+        .desiredPeriod = TASK_PERIOD_HZ(5),          // 5 Hz, 200ms
         .staticPriority = TASK_PRIORITY_IDLE,
+    },
+#endif
+
+#ifdef USE_GYRO_DATA_ANALYSE
+    [TASK_GYRO_DATA_ANALYSE] = {
+        .taskName = "GYROFFT",
+        .taskFunc = gyroDataAnalyseUpdate,
+        .desiredPeriod = TASK_PERIOD_HZ(100),        // 100 Hz, 10ms
+        .staticPriority = TASK_PRIORITY_MEDIUM,
     },
 #endif
 };

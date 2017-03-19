@@ -83,7 +83,7 @@ ADCDevice adcDeviceByInstance(ADC_TypeDef *instance)
     return ADCINVALID;
 }
 
-void adcInit(adcConfig_t *config)
+void adcInit(const adcConfig_t *config)
 {
     uint8_t i;
     uint8_t configuredAdcChannels = 0;
@@ -193,7 +193,7 @@ void adcInit(adcConfig_t *config)
         }
     }
 
-    HAL_CLEANINVALIDATECACHE((uint32_t*)&adcValues, configuredAdcChannels);
+    //HAL_CLEANINVALIDATECACHE((uint32_t*)&adcValues, configuredAdcChannels);
     /*##-4- Start the conversion process #######################################*/
     if(HAL_ADC_Start_DMA(&adc.ADCHandle, (uint32_t*)&adcValues, configuredAdcChannels) != HAL_OK)
     {

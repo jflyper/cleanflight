@@ -18,7 +18,6 @@
 #pragma once
 
 #define TARGET_BOARD_IDENTIFIER "KIWI"
-#define CONFIG_START_FLASH_ADDRESS (0x08080000) //0x08080000 to 0x080A0000 (FLASH_Sector_8)
 
 #define USBD_PRODUCT_STRING     "KIWIF4"
 
@@ -28,7 +27,7 @@
 
 #define BEEPER                  PA8
 
-#define INVERTER_PIN_USART1 PC0 // PC0 used as inverter select GPIO
+#define INVERTER_PIN_UART1      PC0 // PC0 used as inverter select GPIO
 
 // MPU6000 interrupts
 #define USE_EXTI
@@ -79,7 +78,10 @@
 #define UART6_RX_PIN            PC7
 #define UART6_TX_PIN            PC6
 
-#define SERIAL_PORT_COUNT       4 //VCP, USART1, USART3, USART6
+#define USE_SOFTSERIAL1
+#define USE_SOFTSERIAL2
+
+#define SERIAL_PORT_COUNT       6 //VCP, USART1, USART3, USART6, SOFTSERIAL x 2
 
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
@@ -102,13 +104,14 @@
 #define SPI3_MISO_PIN           PC11
 #define SPI3_MOSI_PIN           PC12
 
-
-
-/* #define USE_I2C
-#define I2C_DEVICE              (I2CDEV_1)  // PB6-SCL, PB7-SDA
+/* 
+#define USE_I2C
+#define USE_I2C_DEVICE_1
+#define I2C_DEVICE              (I2CDEV_1)
 #define USE_I2C_PULLUP
 #define I2C1_SCL                PB6
-#define I2C1_SDA                PB7 */
+#define I2C1_SDA                PB7 
+*/
 
 #define USE_ADC
 #define BOARD_HAS_VOLTAGE_DIVIDER
@@ -116,16 +119,11 @@
 #define RSSI_ADC_PIN            PC2
 #define CURRENT_METER_ADC_PIN   PC3
 
-#define DEFAULT_FEATURES        (FEATURE_VBAT | FEATURE_BLACKBOX)
+#define DEFAULT_FEATURES        (FEATURE_VBAT | FEATURE_BLACKBOX | FEATURE_OSD)
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
 #define SERIALRX_PROVIDER       SERIALRX_SBUS
 
-#define LED_STRIP
-
-
-#define SPEKTRUM_BIND
-// USART3 Rx, PB11
-#define BIND_PIN                PB11
+#define SPEKTRUM_BIND_PIN       UART3_RX_PIN
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

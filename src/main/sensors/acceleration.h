@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "config/parameter_group.h"
 #include "drivers/accgyro.h"
 #include "sensors/sensors.h"
 
@@ -35,6 +36,7 @@ typedef enum {
     ACC_MPU9250,
     ACC_ICM20608G,
     ACC_ICM20602,
+    ACC_BMI160,
     ACC_FAKE
 } accelerationSensor_e;
 
@@ -66,7 +68,9 @@ typedef struct accelerometerConfig_s {
     rollAndPitchTrims_t accelerometerTrims;
 } accelerometerConfig_t;
 
-bool accInit(const accelerometerConfig_t *accelerometerConfig, uint32_t gyroTargetLooptime);
+PG_DECLARE(accelerometerConfig_t, accelerometerConfig);
+
+bool accInit(uint32_t gyroTargetLooptime);
 bool isAccelerationCalibrationComplete(void);
 void accSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims);

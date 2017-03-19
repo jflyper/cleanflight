@@ -22,15 +22,8 @@
 
 #ifdef VTX_RTC6705_SOFTSPI
 
-#ifdef VTX_COMMON_DPRINTF
-#include "io/serial.h"
-extern serialPort_t *debugSerialPort;
-# define dprintf(x) if (debugSerialPort) printf x
-#else // VTX_COMMON_DPRINTF
-# define dprintf(x)
-#endif // VTX_COMMON_DPRINTF
-
 #include "build/debug.h"
+#include "drivers/vtx_debug.h"
 
 #include "drivers/io.h"
 #include "drivers/system.h"
@@ -58,21 +51,13 @@ static gen6705Device_t device = {
     .writeRegister = rtc6705_write_register,
 };
 
-void rtc6705_softspi_pinConfigReset(SPIPinConfig_t *pSPIPinConfig)
-{
-    pSPIPinConfig->nssTag = IO_TAG(RTC6705_SPILE_PIN);
-    pSPIPinConfig->sckTag = IO_TAG(RTC6705_SPICLK_PIN);
-    pSPIPinConfig->mosiTag = IO_TAG(RTC6705_SPIDATA_PIN);
-    pSPIPinConfig->misoTag = IO_TAG_NONE;
-}
-
-bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig)
+bool rtc6705_softspi_init(void)
 {
     dprintf(("rtc6705_softspi_init: top\r\n"));
 
-    rtc6705DataPin = IOGetByTag(pSPIPinConfig->mosiTag);
-    rtc6705LePin   = IOGetByTag(pSPIPinConfig->nssTag);
-    rtc6705ClkPin  = IOGetByTag(pSPIPinConfig->sckTag);
+    rtc6705DataPin = IOGetByTag(IO_TAG(RTC6705_SPIDATA_PIN));
+    rtc6705LePin   = IOGetByTag(IO_TAG(RTC6705_SPILE_PIN));
+    rtc6705ClkPin  = IOGetByTag(IO_TAG(RTC6705_SPICLK_PIN));
 
     if (!(rtc6705DataPin && rtc6705LePin && rtc6705ClkPin))
         return false;

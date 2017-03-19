@@ -18,13 +18,12 @@
 #pragma once
 
 #include "common/time.h"
+#include "config/parameter_group.h"
 
 #define VISIBLE_FLAG  0x0800
-#define BLINK_FLAG    0x0400
 #define VISIBLE(x)    (x & VISIBLE_FLAG)
-#define BLINK(x)      ((x & BLINK_FLAG) && blinkState)
-#define BLINK_OFF(x)  (x & ~BLINK_FLAG)
 #define OSD_POS_MAX   0x3FF
+#define OSD_POSCFG_MAX   (VISIBLE_FLAG|0x3FF) // For CLI values
 
 typedef enum {
     OSD_RSSI_VALUE,
@@ -47,6 +46,8 @@ typedef enum {
     OSD_PITCH_PIDS,
     OSD_YAW_PIDS,
     OSD_POWER,
+    OSD_PIDRATE_PROFILE,
+    OSD_MAIN_BATT_WARNING,
     OSD_ITEM_COUNT // MUST BE LAST
 } osd_items_e;
 
@@ -55,7 +56,7 @@ typedef enum {
     OSD_UNIT_METRIC
 } osd_unit_e;
 
-typedef struct osd_profile_s {
+typedef struct osdConfig_s {
     uint16_t item_pos[OSD_ITEM_COUNT];
 
     // Alarms
@@ -65,10 +66,14 @@ typedef struct osd_profile_s {
     uint16_t alt_alarm;
 
     osd_unit_e units;
-} osd_profile_t;
+} osdConfig_t;
+
+extern uint16_t refreshTimeout;
+
+PG_DECLARE(osdConfig_t, osdConfig);
 
 struct displayPort_s;
 void osdInit(struct displayPort_s *osdDisplayPort);
-void osdResetConfig(osd_profile_t *osdProfile);
+void osdResetConfig(osdConfig_t *osdProfile);
 void osdResetAlarms(void);
 void osdUpdate(timeUs_t currentTimeUs);

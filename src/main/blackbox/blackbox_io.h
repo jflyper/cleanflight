@@ -17,18 +17,6 @@
 
 #pragma once
 
-typedef enum BlackboxDevice {
-    BLACKBOX_DEVICE_SERIAL = 0,
-
-#ifdef USE_FLASHFS
-    BLACKBOX_DEVICE_FLASH = 1,
-#endif
-#ifdef USE_SDCARD
-    BLACKBOX_DEVICE_SDCARD = 2,
-#endif
-
-} BlackboxDevice;
-
 typedef enum {
     BLACKBOX_RESERVE_SUCCESS,
     BLACKBOX_RESERVE_TEMPORARY_FAILURE,
@@ -49,6 +37,7 @@ typedef enum {
 
 extern int32_t blackboxHeaderBudget;
 
+void blackboxOpen(void);
 void blackboxWrite(uint8_t value);
 
 int blackboxPrintf(const char *fmt, ...);
@@ -70,6 +59,9 @@ void blackboxDeviceFlush(void);
 bool blackboxDeviceFlushForce(void);
 bool blackboxDeviceOpen(void);
 void blackboxDeviceClose(void);
+
+void blackboxEraseAll(void);
+bool isBlackboxErased(void);
 
 bool blackboxDeviceBeginLog(void);
 bool blackboxDeviceEndLog(bool retainLog);

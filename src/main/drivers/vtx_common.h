@@ -31,7 +31,7 @@ typedef struct vtxConfig_s {
     uint16_t vtx_mhz;
 } vtxConfig_t;
 
-vtxConfig_t vtxConfig;
+PG_DECLARE(vtxConfig_t, vtxConfig);
 
 // Device type for vtx_device CLI var.
 // Initialized based on per target RTC6705 driver usage, can be modified by CLI.
@@ -98,7 +98,7 @@ typedef struct vtxVTable_s {
 // - It can be a dedicated mode, or lowest RF power possible.
 // - It is *NOT* RF on/off control ?
 
-void vtxCommonInit(vtxConfig_t *pVtxConfigToUse);
+void vtxCommonInit(vtxConfig_t *pVtxConfigMutableToUse);
 void vtxCommonRegisterDevice(vtxDevice_t *pDevice);
 
 // VTable functions

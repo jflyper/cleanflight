@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
 #include "platform.h"
 
@@ -769,6 +770,10 @@ void timerForceOverflow(TIM_TypeDef *tim)
 
 const timerHardware_t *timerGetByTag(ioTag_t tag, timerUsageFlag_e flag)
 {
+    if (!tag) {
+        return NULL;
+    }
+
     for (int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
         if (timerHardware[i].tag == tag) {
             if (timerHardware[i].usageFlags & flag || flag == 0) {
@@ -838,3 +843,17 @@ uint16_t timerDmaSource(uint8_t channel)
     return 0;
 }
 #endif
+
+uint16_t timerGetPrescalerByDesiredMhz(TIM_TypeDef *tim, uint16_t mhz)
+{
+    // protection here for desired MHZ > SystemCoreClock???
+    if ((uint32_t)(mhz * 1000000) > (SystemCoreClock / timerClockDivisor(tim))) {
+        return 0;
+    }
+    return (uint16_t)(round((SystemCoreClock / timerClockDivisor(tim) / (mhz * 1000000)) - 1));
+}
+
+uint16_t timerGetPeriodByPrescaler(TIM_TypeDef *tim, uint16_t prescaler, uint32_t hertz)
+{
+    return ((uint16_t)((SystemCoreClock / timerClockDivisor(tim) / (prescaler + 1)) / hertz));
+}

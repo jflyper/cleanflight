@@ -22,12 +22,14 @@
 
 #include "config/parameter_group.h"
 
-#if FLASH_SIZE <= 128
-#define MAX_PROFILE_COUNT 2
-#else
-#define MAX_PROFILE_COUNT 3
-#endif
-#define MAX_RATEPROFILES 3
+#include "drivers/adc.h"
+#include "drivers/flash.h"
+#include "drivers/rx_pwm.h"
+#include "drivers/sdcard.h"
+#include "drivers/serial.h"
+#include "drivers/sound_beeper.h"
+#include "drivers/vcd.h"
+
 #define MAX_NAME_LENGTH 16
 
 typedef enum {
@@ -61,6 +63,27 @@ typedef enum {
     FEATURE_ESC_SENSOR = 1 << 27,
 } features_e;
 
+typedef struct systemConfig_s {
+    uint8_t pidProfileIndex;
+    uint8_t activeRateProfile;
+    uint8_t debug_mode;
+    uint8_t task_statistics;
+    char name[MAX_NAME_LENGTH + 1];
+} systemConfig_t;
+
+PG_DECLARE(systemConfig_t, systemConfig);
+PG_DECLARE(adcConfig_t, adcConfig);
+PG_DECLARE(beeperDevConfig_t, beeperDevConfig);
+PG_DECLARE(flashConfig_t, flashConfig);
+PG_DECLARE(ppmConfig_t, ppmConfig);
+PG_DECLARE(pwmConfig_t, pwmConfig);
+PG_DECLARE(vcdProfile_t, vcdProfile);
+PG_DECLARE(sdcardConfig_t, sdcardConfig);
+PG_DECLARE(serialPinConfig_t, serialPinConfig);
+
+struct pidProfile_s;
+extern struct pidProfile_s *currentPidProfile;
+
 void beeperOffSet(uint32_t mask);
 void beeperOffSetAll(uint8_t beeperCount);
 void beeperOffClear(uint32_t mask);
@@ -69,8 +92,6 @@ uint32_t getBeeperOffMask(void);
 void setBeeperOffMask(uint32_t mask);
 uint32_t getPreferredBeeperOffMask(void);
 void setPreferredBeeperOffMask(uint32_t mask);
-
-void copyCurrentProfileToProfileSlot(uint8_t profileSlotIndex);
 
 void initEEPROM(void);
 void resetEEPROM(void);
@@ -83,18 +104,18 @@ void validateAndFixConfig(void);
 void validateAndFixGyroConfig(void);
 void activateConfig(void);
 
-uint8_t getCurrentProfile(void);
-void changeProfile(uint8_t profileIndex);
-struct profile_s;
-void resetProfile(struct profile_s *profile);
+uint8_t getCurrentPidProfileIndex(void);
+void changePidProfile(uint8_t pidProfileIndex);
+struct pidProfile_s;
+void resetPidProfile(struct pidProfile_s *profile);
 
-uint8_t getCurrentControlRateProfile(void);
+uint8_t getCurrentControlRateProfileIndex(void);
 void changeControlRateProfile(uint8_t profileIndex);
+
 bool canSoftwareSerialBeUsed(void);
 
 uint16_t getCurrentMinthrottle(void);
 
 void resetConfigs(void);
-struct master_s;
-void targetConfiguration(struct master_s *config);
-void targetValidateConfiguration(struct master_s *config);
+void targetConfiguration(void);
+void targetValidateConfiguration(void);

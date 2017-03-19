@@ -17,6 +17,14 @@
 
 #pragma once
 
-void rtc6705_softspi_pinConfigReset(SPIPinConfig_t *pSPIPinConfig);
-bool rtc6705_softspi_init(SPIPinConfig_t *pSPIPinConfig);
+// XXX Should eventually be part of bus_spi.h?
+// XXX Relationship with busDevice_t/deviceSpi_s?
+typedef struct softSPIConfig_s {
+    ioTag_t nss;
+    ioTag_t sck;
+    ioTag_t mosi;
+    ioTag_t miso;
+} softSPIConfig_t;
+
+bool rtc6705_softspi_init(void);
 void rtc6705_softspi_transfer(uint8_t addr, uint32_t data);

@@ -86,6 +86,14 @@
 #define DISABLE_RTC6705 GPIO_SetBits(RTC6705_CS_GPIO,   RTC6705_CS_PIN)
 #define ENABLE_RTC6705  GPIO_ResetBits(RTC6705_CS_GPIO, RTC6705_CS_PIN)
 
+#ifdef RTC6705_POWER_PIN
+static IO_t vtxPowerPin        = IO_NONE;
+#endif
+
+#define ENABLE_VTX_POWER       IOLo(vtxPowerPin)
+#define DISABLE_VTX_POWER      IOHi(vtxPowerPin)
+
+
 // Define variables
 static const uint32_t channelArray[RTC6705_BAND_MAX][RTC6705_CHANNEL_MAX] = {
     { RTC6705_SET_A1, RTC6705_SET_A2, RTC6705_SET_A3, RTC6705_SET_A4, RTC6705_SET_A5, RTC6705_SET_A6, RTC6705_SET_A7, RTC6705_SET_A8 },

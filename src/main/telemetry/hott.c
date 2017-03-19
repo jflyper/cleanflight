@@ -65,6 +65,10 @@
 
 #include "common/axis.h"
 #include "common/time.h"
+#include "common/utils.h"
+
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
 
 #include "drivers/system.h"
 
@@ -79,6 +83,8 @@
 #include "flight/pid.h"
 #include "flight/navigation.h"
 #include "io/gps.h"
+
+#include "flight/altitudehold.h"
 
 #include "telemetry/telemetry.h"
 #include "telemetry/hott.h"
@@ -108,7 +114,6 @@ static uint8_t hottMsgCrc;
 static serialPort_t *hottPort = NULL;
 static serialPortConfig_t *portConfig;
 
-static telemetryConfig_t *telemetryConfig;
 static bool hottTelemetryEnabled =  false;
 static portSharing_e hottPortSharing;
 
@@ -219,7 +224,7 @@ void hottPrepareGPSResponse(HOTT_GPS_MSG_t *hottGPSMessage)
 
 static bool shouldTriggerBatteryAlarmNow(void)
 {
-    return ((millis() - lastHottAlarmSoundTime) >= (telemetryConfig->hottAlarmSoundInterval * MILLISECONDS_IN_A_SECOND));
+    return ((millis() - lastHottAlarmSoundTime) >= (telemetryConfig()->hottAlarmSoundInterval * MILLISECONDS_IN_A_SECOND));
 }
 
 static inline void updateAlarmBatteryStatus(HOTT_EAM_MSG_t *hottEAMMessage)
@@ -264,6 +269,21 @@ static inline void hottEAMUpdateBatteryDrawnCapacity(HOTT_EAM_MSG_t *hottEAMMess
     hottEAMMessage->batt_cap_H = mAh >> 8;
 }
 
+static inline void hottEAMUpdateAltitude(HOTT_EAM_MSG_t *hottEAMMessage)
+{
+    const uint16_t hottEamAltitude = (baro.BaroAlt / 100) + HOTT_EAM_OFFSET_HEIGHT;
+
+    hottEAMMessage->altitude_L = hottEamAltitude & 0x00FF;
+    hottEAMMessage->altitude_H = hottEamAltitude >> 8;
+}
+
+static inline void hottEAMUpdateClimbrate(HOTT_EAM_MSG_t *hottEAMMessage)
+{
+    hottEAMMessage->climbrate_L = (30000 + vario) & 0x00FF;
+    hottEAMMessage->climbrate_H = (30000 + vario) >> 8;
+    hottEAMMessage->climbrate3s = 120 + (vario / 100);  
+}
+
 void hottPrepareEAMResponse(HOTT_EAM_MSG_t *hottEAMMessage)
 {
     // Reset alarms
@@ -273,6 +293,8 @@ void hottPrepareEAMResponse(HOTT_EAM_MSG_t *hottEAMMessage)
     hottEAMUpdateBattery(hottEAMMessage);
     hottEAMUpdateCurrentMeter(hottEAMMessage);
     hottEAMUpdateBatteryDrawnCapacity(hottEAMMessage);
+    hottEAMUpdateAltitude(hottEAMMessage);
+    hottEAMUpdateClimbrate(hottEAMMessage);
 }
 
 static void hottSerialWrite(uint8_t c)
@@ -289,9 +311,8 @@ void freeHoTTTelemetryPort(void)
     hottTelemetryEnabled = false;
 }
 
-void initHoTTTelemetry(telemetryConfig_t *initialTelemetryConfig)
+void initHoTTTelemetry(void)
 {
-    telemetryConfig = initialTelemetryConfig;
     portConfig = findSerialPortConfig(FUNCTION_TELEMETRY_HOTT);
     hottPortSharing = determinePortSharing(portConfig, FUNCTION_TELEMETRY_HOTT);
 

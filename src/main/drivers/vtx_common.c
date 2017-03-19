@@ -23,37 +23,41 @@
 #include <string.h>
 
 #include "platform.h"
+
 #include "build/debug.h"
 
-#if defined(VTX_COMMON)
+#include "config/config_eeprom.h"
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
 
-//#include "fc/config.h"
+#include "fc/config.h"
+#include "fc/runtime_config.h"
+
 #include "vtx_common.h"
 #include "vtx_debug.h"
 
-vtxConfig_t *pVtxConfig = NULL;
+#if defined(VTX_COMMON)
 
-#ifdef notdef // Preparation for PG migration
-vtxConfig_t vtxConfig = {  // Underlying vtx device
-# if defined(VTX_RTC6705_SPI)
-    .vtx_device = VTX_DEVICE_RTC6705_SPI,
-# elif defined(VTX_RTC6705_SOFTSPI)
-    .vtx_device = VTX_DEVICE_RTC6705_SOFTSPI,
-# else
-    .vtx_device = VTX_DEVICE_OTHER,
-# endif
+PG_REGISTER_WITH_RESET_TEMPLATE(vtxConfig_t, vtxConfig, PG_VTX_CONFIG, 0);
+
+#if defined(VTX_RTC6705_SPI)
+#define VTX_DEVICE VTX_DEVICE_RTC6705_SPI
+#elif defined(VTX_RTC6705_SOFTSPI)
+#define VTX_DEVICE VTX_DEVICE_RTC6705_SOFTSPI
+#else
+#define VTX_DEVICE VTX_DEVICE_OTHER
+#endif
+
+PG_RESET_TEMPLATE(vtxConfig_t, vtxConfig,
+    .vtx_device = VTX_DEVICE,
     .vtx_mode = 0,
     .vtx_band = 1,
     .vtx_channel = 1,
     .vtx_mhz = 5740,
     .vtx_power = 1,
-};
+);
 
-void resetVtxConfig(vtxConfig_t *vtxConfig)
-{
-    pVtxDevice = &vtxDevice;
-}
-#endif
+vtxConfig_t *pVtxConfig = NULL;
 
 vtxDevice_t *pVtxDevice = NULL;
 
@@ -220,16 +224,16 @@ vtxDeviceParam_t *vtxCommonGetDeviceParam(void)
     return &pVtxDevice->devParam;
 }
 
-void vtxCommonInit(vtxConfig_t *pVtxConfigToUse)
+void vtxCommonInit(vtxConfig_t *vtxConfigMutableToUse)
 {
-    pVtxConfig = pVtxConfigToUse;
+    pVtxConfig = vtxConfigMutableToUse;
 
     if (!pVtxDevice) {
         dprintf(("vtxCommonInit: no vtxDevice\r\n"));
         return;
     }
 
-    dprintf(("vtxCommonInit: vtx_mode %d vtx_band %d vtx_chan %d vtx_mhz %d\r\n", pVtxConfig->vtx_mode, pVtxConfig->vtx_band, pVtxConfig->vtx_channel, pVtxConfig->vtx_mhz));
+    dprintf(("vtxCommonInit: vtx_mode %d vtx_band %d vtx_chan %d vtx_mhz %d vtx_power %d\r\n", pVtxConfig->vtx_mode, pVtxConfig->vtx_band, pVtxConfig->vtx_channel, pVtxConfig->vtx_mhz, pVtxConfig->vtx_power));
 }
 
 #endif

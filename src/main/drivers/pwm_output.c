@@ -17,16 +17,20 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
 
 #include "platform.h"
+#include "system.h"
 
 #include "io.h"
-#include "timer.h"
 #include "pwm_output.h"
+#include "timer.h"
 
 #define MULTISHOT_5US_PW    (MULTISHOT_TIMER_MHZ * 5)
 #define MULTISHOT_20US_MULT (MULTISHOT_TIMER_MHZ * 20 / 1000.0f)
+
+#define DSHOT_MAX_COMMAND 47
 
 static pwmWriteFuncPtr pwmWritePtr;
 static pwmOutputPort_t motors[MAX_SUPPORTED_MOTORS];
@@ -108,6 +112,12 @@ static void pwmOutConfig(pwmOutputPort_t *port, const timerHardware_t *timerHard
     *port->ccr = 0;
 }
 
+static void pwmWriteUnused(uint8_t index, uint16_t value)
+{
+    UNUSED(index);
+    UNUSED(value);
+}
+
 static void pwmWriteBrushed(uint8_t index, uint16_t value)
 {
     *motors[index].ccr = (value - 1000) * motors[index].period / 1000;
@@ -156,7 +166,8 @@ void pwmDisableMotors(void)
 
 void pwmEnableMotors(void)
 {
-    pwmMotorsEnabled = true;
+    /* check motors can be enabled */
+    pwmMotorsEnabled = (pwmWritePtr != pwmWriteUnused);
 }
 
 bool pwmAreMotorsEnabled(void)
@@ -164,18 +175,15 @@ bool pwmAreMotorsEnabled(void)
     return pwmMotorsEnabled;
 }
 
+static void pwmCompleteWriteUnused(uint8_t motorCount)
+{
+    UNUSED(motorCount);    
+}
+
 static void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
 {
     for (int index = 0; index < motorCount; index++) {
-        bool overflowed = false;
-        // If we have not already overflowed this timer
-        for (int j = 0; j < index; j++) {
-            if (motors[j].tim == motors[index].tim) {
-                overflowed = true;
-                break;
-            }
-        }
-        if (!overflowed) {
+        if (motors[index].forceOverflow) {
             timerForceOverflow(motors[index].tim);
         }
         // Set the compare register to 0, which stops the output pulsing if the timer overflows before the main loop completes again.
@@ -186,13 +194,13 @@ static void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
 
 void pwmCompleteMotorUpdate(uint8_t motorCount)
 {
-    if (pwmCompleteWritePtr) {
-        pwmCompleteWritePtr(motorCount);
-    }
+    pwmCompleteWritePtr(motorCount);
 }
 
-void motorInit(const motorConfig_t *motorConfig, uint16_t idlePulse, uint8_t motorCount)
+void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8_t motorCount)
 {
+    memset(motors, 0, sizeof(motors));
+    
     uint32_t timerMhzCounter = 0;
     bool useUnsyncedPwm = motorConfig->useUnsyncedPwm;
     bool isDigital = false;
@@ -235,22 +243,20 @@ void motorInit(const motorConfig_t *motorConfig, uint16_t idlePulse, uint8_t mot
 #endif
     }
 
-    if (!useUnsyncedPwm && !isDigital) {
-        pwmCompleteWritePtr = pwmCompleteOneshotMotorUpdate;
+    if (!isDigital) {
+        pwmCompleteWritePtr = useUnsyncedPwm ? pwmCompleteWriteUnused : pwmCompleteOneshotMotorUpdate;
     }
 
     for (int motorIndex = 0; motorIndex < MAX_SUPPORTED_MOTORS && motorIndex < motorCount; motorIndex++) {
         const ioTag_t tag = motorConfig->ioTags[motorIndex];
-
-        if (!tag) {
-            break;
-        }
-
         const timerHardware_t *timerHardware = timerGetByTag(tag, TIM_USE_ANY);
 
         if (timerHardware == NULL) {
-            /* flag failure and disable ability to arm */
-            break;
+            /* not enough motors initialised for the mixer or a break in the motors */
+            pwmWritePtr = pwmWriteUnused;
+            pwmCompleteWritePtr = pwmCompleteWriteUnused;
+            /* TODO: block arming and add reason system cannot arm */
+            return;
         }
 
         motors[motorIndex].io = IOGetByTag(tag);
@@ -277,8 +283,18 @@ void motorInit(const motorConfig_t *motorConfig, uint16_t idlePulse, uint8_t mot
         } else {
             pwmOutConfig(&motors[motorIndex], timerHardware, timerMhzCounter, 0xFFFF, 0, motorConfig->motorPwmInversion);
         }
+
+        bool timerAlreadyUsed = false;
+        for (int i = 0; i < motorIndex; i++) {
+            if (motors[i].tim == motors[motorIndex].tim) {
+                timerAlreadyUsed = true;
+                break;
+            }
+        }
+        motors[motorIndex].forceOverflow = !timerAlreadyUsed;
         motors[motorIndex].enabled = true;
     }
+
     pwmMotorsEnabled = true;
 }
 
@@ -302,6 +318,27 @@ uint32_t getDshotHz(motorPwmProtocolTypes_e pwmProtocolType)
             return MOTOR_DSHOT150_MHZ * 1000000;
     }
 }
+
+void pwmWriteDshotCommand(uint8_t index, uint8_t command)
+{
+    if (command <= DSHOT_MAX_COMMAND) {
+        motorDmaOutput_t *const motor = getMotorDmaOutput(index);
+
+        unsigned repeats;
+        if ((command >= 7 && command <= 10) || command == 12) {
+            repeats = 10;
+        } else {
+            repeats = 1;
+        }
+        for (; repeats; repeats--) {
+            motor->requestTelemetry = true;
+            pwmWritePtr(index, command);
+            pwmCompleteMotorUpdate(0);
+
+            delay(1);
+        }
+    }
+}
 #endif
 
 #ifdef USE_SERVOS
@@ -312,7 +349,7 @@ void pwmWriteServo(uint8_t index, uint16_t value)
     }
 }
 
-void servoInit(const servoConfig_t *servoConfig)
+void servoDevInit(const servoDevConfig_t *servoConfig)
 {
     for (uint8_t servoIndex = 0; servoIndex < MAX_SUPPORTED_SERVOS; servoIndex++) {
         const ioTag_t tag = servoConfig->ioTags[servoIndex];

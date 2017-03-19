@@ -17,6 +17,8 @@
 
 #pragma once
 
+#undef TELEMETRY_IBUS   //no space left
+
 #define TARGET_BOARD_IDENTIFIER "OMNI" // https://en.wikipedia.org/wiki/Omnibus
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
@@ -58,17 +60,16 @@
 //#define SONAR_ECHO_PIN          PB1
 //#define SONAR_TRIGGER_PIN       PB0
 
-#undef GPS
-
-#define USB_IO
-#define USB_CABLE_DETECTION
 #define USB_DETECT_PIN          PB5
 
 #define USE_VCP
 #define USE_UART1
 #define USE_UART2
 #define USE_UART3
-#define SERIAL_PORT_COUNT       4
+#define USE_SOFTSERIAL1
+#define USE_SOFTSERIAL2
+
+#define SERIAL_PORT_COUNT       6
 
 #define UART1_TX_PIN            PA9
 #define UART1_RX_PIN            PA10
@@ -79,8 +80,10 @@
 #define UART3_TX_PIN            PB10 // PB10 (AF7)
 #define UART3_RX_PIN            PB11 // PB11 (AF7)
 
-#define USE_I2C
-#define I2C_DEVICE (I2CDEV_1) // PB6/SCL, PB7/SDA
+#undef USE_I2C
+//#define USE_I2C
+//#define USE_I2C_DEVICE_1
+//#define I2C_DEVICE              (I2CDEV_1)
 
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
@@ -150,15 +153,13 @@
 //#define RSSI_ADC_PIN                PB1
 //#define ADC_INSTANCE                ADC3
 
-#define LED_STRIP
-
 #define TRANSPONDER
 #define REDUCE_TRANSPONDER_CURRENT_DRAW_WHEN_USB_CABLE_PRESENT
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
-#define DEFAULT_FEATURES        (FEATURE_VBAT | FEATURE_CURRENT_METER | FEATURE_BLACKBOX)
+#define DEFAULT_FEATURES        (FEATURE_VBAT | FEATURE_CURRENT_METER | FEATURE_BLACKBOX | FEATURE_OSD)
 
 #define BUTTONS
 #define BUTTON_A_PIN            PB1
@@ -166,11 +167,8 @@
 
 //#define AVOID_UART3_FOR_PWM_PPM // Disable this for using UART3
 
-#define SPEKTRUM_BIND
-// USART3,
-#define BIND_PIN                PB11
+#define SPEKTRUM_BIND_PIN       UART3_RX_PIN
 
-#define HARDWARE_BIND_PLUG
 #define BINDPLUG_PIN            PB0
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE

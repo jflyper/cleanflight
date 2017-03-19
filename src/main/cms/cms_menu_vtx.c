@@ -26,6 +26,8 @@
 
 #include "build/debug.h"
 
+#ifdef CMS
+
 #include "cms/cms.h"
 #include "cms/cms_types.h"
 #include "cms/cms_menu_vtx.h"
@@ -34,15 +36,15 @@
 #include "common/printf.h"
 
 #include "config/config_profile.h"
-#include "config/config_master.h"
 #include "config/feature.h"
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
 
+#include "fc/config.h"
 #include "io/vtx_string.h"
 #include "drivers/vtx_gen6705.h"
 
 #include "drivers/vtx_debug.h"
-
-#ifdef CMS
 
 #ifdef VTX_GEN6705 // XXX Not really for gen6705
 
@@ -437,6 +439,6 @@ CMS_Menu cmsx_menuVtx = {
     .onGlobalExit = cmsx_Vtx_FeatureWriteback,
     .entries = cmsx_menuVtxNullEntries,
 };
-#endif // VTX_RTC6705
+#endif // VTX_GEN6705
 
 #endif // CMS
