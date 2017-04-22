@@ -50,6 +50,7 @@
 #define JEDEC_ID_MICRON_N25Q128        0x20ba18
 #define JEDEC_ID_WINBOND_W25Q128       0xEF4018
 #define JEDEC_ID_MACRONIX_MX25L25635E  0xC22019
+#define JEDEC_ID_ONSEMI_LE25S161       0x621615
 
 #define DISABLE_M25P16       IOHi(m25p16CsPin); __NOP()
 #define ENABLE_M25P16        __NOP(); IOLo(m25p16CsPin)
@@ -162,6 +163,7 @@ static bool m25p16_readIdentification()
 
     switch (chipID) {
         case JEDEC_ID_MICRON_M25P16:
+        case JEDEC_ID_ONSEMI_LE25S161:
             geometry.sectors = 32;
             geometry.pagesPerSector = 256;
         break;
