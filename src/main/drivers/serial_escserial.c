@@ -23,6 +23,7 @@
 
 typedef enum {
     BAUDRATE_NORMAL = 19200,
+    BAUDRATE_SIMONK = 28800, // = 9600 * 3
     BAUDRATE_KISS   = 38400,
     BAUDRATE_CASTLE = 18880
 } escBaudRate_e;
@@ -31,6 +32,8 @@ typedef enum {
 
 #include "build/build_config.h"
 #include "build/atomic.h"
+
+#define USE_ESCSERIAL_SIMONK
 
 #include "common/utils.h"
 
@@ -108,11 +111,16 @@ extern escSerial_t escSerialPorts[];
 
 extern const struct serialPortVTable escSerialVTable[];
 
-
 escSerial_t escSerialPorts[MAX_ESCSERIAL_PORTS];
 
+typedef void (*onSerialTimerFuncPtr)(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
+typedef void (*onPinChangeFuncPtr)(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
+
+#ifdef USE_ESCSERIAL_SIMONK
 void onSerialTimerEsc(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
 void onSerialRxPinChangeEsc(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
+#endif
+
 void onSerialTimerBL(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
 void onSerialRxPinChangeBL(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
 
@@ -188,7 +196,7 @@ static bool isTimerPeriodTooLarge(uint32_t timerPeriod)
     return timerPeriod > 0xFFFF;
 }
 
-static void serialTimerTxConfigBL(const timerHardware_t *timerHardwarePtr, uint8_t reference, uint32_t baud)
+static void escSerialTimerTxConfig(const timerHardware_t *timerHardwarePtr, uint8_t reference, uint32_t baud, onSerialTimerFuncPtr onSerialTimer)
 {
     uint32_t clock = SystemCoreClock/2;
     uint32_t timerPeriod;
@@ -206,36 +214,16 @@ static void serialTimerTxConfigBL(const timerHardware_t *timerHardwarePtr, uint8
     } while (isTimerPeriodTooLarge(timerPeriod));
 
     timerConfigure(timerHardwarePtr, timerPeriod, clock);
-    timerChCCHandlerInit(&escSerialPorts[reference].timerCb, onSerialTimerBL);
+    timerChCCHandlerInit(&escSerialPorts[reference].timerCb, onSerialTimer);
     timerChConfigCallbacks(timerHardwarePtr, &escSerialPorts[reference].timerCb, NULL);
 }
 
-static void serialTimerRxConfigBL(const timerHardware_t *timerHardwarePtr, uint8_t reference, portOptions_t options)
+static void escSerialTimerRxConfig(const timerHardware_t *timerHardwarePtr, uint8_t reference, portOptions_t options, uint32_t hz, onPinChangeFuncPtr onPinChange)
 {
-    // start bit is usually a FALLING signal
     TIM_DeInit(timerHardwarePtr->tim);
-    timerConfigure(timerHardwarePtr, 0xFFFF, SystemCoreClock / 2);
+    timerConfigure(timerHardwarePtr, 0xFFFF, hz);
     timerChConfigIC(timerHardwarePtr, (options & SERIAL_INVERTED) ? ICPOLARITY_RISING : ICPOLARITY_FALLING, 0);
-    timerChCCHandlerInit(&escSerialPorts[reference].edgeCb, onSerialRxPinChangeBL);
-    timerChConfigCallbacks(timerHardwarePtr, &escSerialPorts[reference].edgeCb, NULL);
-}
-
-static void escSerialTimerTxConfig(const timerHardware_t *timerHardwarePtr, uint8_t reference)
-{
-    uint32_t timerPeriod = 34;
-    TIM_DeInit(timerHardwarePtr->tim);
-    timerConfigure(timerHardwarePtr, timerPeriod, MHZ_TO_HZ(1));
-    timerChCCHandlerInit(&escSerialPorts[reference].timerCb, onSerialTimerEsc);
-    timerChConfigCallbacks(timerHardwarePtr, &escSerialPorts[reference].timerCb, NULL);
-}
-
-static void escSerialTimerRxConfig(const timerHardware_t *timerHardwarePtr, uint8_t reference)
-{
-    // start bit is usually a FALLING signal
-    TIM_DeInit(timerHardwarePtr->tim);
-    timerConfigure(timerHardwarePtr, 0xFFFF, MHZ_TO_HZ(1));
-    timerChConfigIC(timerHardwarePtr, ICPOLARITY_FALLING, 0);
-    timerChCCHandlerInit(&escSerialPorts[reference].edgeCb, onSerialRxPinChangeEsc);
+    timerChCCHandlerInit(&escSerialPorts[reference].edgeCb, onPinChange);
     timerChConfigCallbacks(timerHardwarePtr, &escSerialPorts[reference].edgeCb, NULL);
 }
 
@@ -301,21 +289,28 @@ serialPort_t *openEscSerial(escSerialPortIndex_e portIndex, serialReceiveCallbac
         escSerialInputPortConfig(escSerial->rxTimerHardware);
         setTxSignalEsc(escSerial, ENABLE);
     }
+
     delay(50);
 
-    if(mode==PROTOCOL_SIMONK){
-        escSerialTimerTxConfig(escSerial->txTimerHardware, portIndex);
-        escSerialTimerRxConfig(escSerial->rxTimerHardware, portIndex);
-    }
-    else if(mode==PROTOCOL_BLHELI){
-        serialTimerTxConfigBL(escSerial->txTimerHardware, portIndex, baud);
-        serialTimerRxConfigBL(escSerial->rxTimerHardware, portIndex, options);
-    }
-    else if(mode==PROTOCOL_KISS) {
+    switch (mode) {
+#ifdef USE_ESCSERIAL_SIMONK
+    case PROTOCOL_SIMONK:
+        escSerialTimerTxConfig(escSerial->txTimerHardware, portIndex, BAUDRATE_SIMONK, onSerialTimerEsc);
+        escSerialTimerRxConfig(escSerial->rxTimerHardware, portIndex, 0, MHZ_TO_HZ(1), onSerialRxPinChangeEsc);
+        break;
+#endif
+
+    case PROTOCOL_BLHELI:
+        escSerialTimerTxConfig(escSerial->txTimerHardware, portIndex, baud, onSerialTimerBL);
+        escSerialTimerRxConfig(escSerial->rxTimerHardware, portIndex, options, SystemCoreClock/2, onSerialRxPinChangeBL); 
+        break;
+
+    case PROTOCOL_KISS:
         escSerialOutputPortConfig(escSerial->rxTimerHardware); // rx is the pin used
-        serialTimerTxConfigBL(escSerial->txTimerHardware, portIndex, baud);
-    }
-    else if(mode==PROTOCOL_KISSALL) {
+        escSerialTimerTxConfig(escSerial->txTimerHardware, portIndex, baud, onSerialTimerBL);
+        break;
+
+    case PROTOCOL_KISSALL:
         escSerial->outputCount = 0;
         memset(&escOutputs, 0, sizeof(escOutputs));
         pwmOutputPort_t *pwmMotors = pwmGetMotors();
@@ -338,13 +333,16 @@ serialPort_t *openEscSerial(escSerialPortIndex_e portIndex, serialReceiveCallbac
             }
         }
         setTxSignalEsc(escSerial, ENABLE);
-        serialTimerTxConfigBL(escSerial->txTimerHardware, portIndex, baud);
-    }
-    else if(mode == PROTOCOL_CASTLE){
+        escSerialTimerTxConfig(escSerial->txTimerHardware, portIndex, baud, onSerialTimerBL);
+        break;
+
+    case PROTOCOL_CASTLE:
         escSerialOutputPortConfig(escSerial->rxTimerHardware);
-        serialTimerTxConfigBL(escSerial->txTimerHardware, portIndex, baud);
-        serialTimerRxConfigBL(escSerial->rxTimerHardware, portIndex, options);
+        escSerialTimerTxConfig(escSerial->txTimerHardware, portIndex, baud, onSerialTimerBL);
+        escSerialTimerRxConfig(escSerial->rxTimerHardware, portIndex, options, SystemCoreClock/2, onSerialRxPinChangeBL); 
+        break;
     }
+
     return &escSerial->port;
 }
 
@@ -371,104 +369,9 @@ void closeEscSerial(escSerialPortIndex_e portIndex, uint8_t mode)
     TIM_DeInit(escSerial->txTimerHardware->tim);
 }
 
-/*********************************************/
-
-void processTxStateEsc(escSerial_t *escSerial)
-{
-    uint8_t mask;
-    static uint8_t bitq=0, transmitStart=0;
-    if (escSerial->isReceivingData) {
-        return;
-    }
-
-    if(transmitStart==0)
-    {
-        setTxSignalEsc(escSerial, 1);
-    }
-    if (!escSerial->isTransmittingData) {
-        char byteToSend;
-reload:
-        if (isEscSerialTransmitBufferEmpty((serialPort_t *)escSerial)) {
-            // canreceive
-            transmitStart=0;
-            return;
-        }
-
-        if(transmitStart<3)
-        {
-            if(transmitStart==0)
-                byteToSend = 0xff;
-            if(transmitStart==1)
-                byteToSend = 0xff;
-            if(transmitStart==2)
-                byteToSend = 0x7f;
-            transmitStart++;
-        }
-        else{
-            // data to send
-            byteToSend = escSerial->port.txBuffer[escSerial->port.txBufferTail++];
-            if (escSerial->port.txBufferTail >= escSerial->port.txBufferSize) {
-                escSerial->port.txBufferTail = 0;
-            }
-        }
-
-
-        // build internal buffer, data bits (MSB to LSB)
-        escSerial->internalTxBuffer = byteToSend;
-        escSerial->bitsLeftToTransmit = 8;
-        escSerial->isTransmittingData = true;
-
-        //set output
-        escSerialOutputPortConfig(escSerial->rxTimerHardware);
-        return;
-    }
-
-    if (escSerial->bitsLeftToTransmit) {
-        mask = escSerial->internalTxBuffer & 1;
-        if(mask)
-        {
-            if(bitq==0 || bitq==1)
-            {
-                setTxSignalEsc(escSerial, 1);
-            }
-            if(bitq==2 || bitq==3)
-            {
-                setTxSignalEsc(escSerial, 0);
-            }
-        }
-        else
-        {
-            if(bitq==0 || bitq==2)
-            {
-                setTxSignalEsc(escSerial, 1);
-            }
-            if(bitq==1 ||bitq==3)
-            {
-                setTxSignalEsc(escSerial, 0);
-            }
-        }
-        bitq++;
-        if(bitq>3)
-        {
-            escSerial->internalTxBuffer >>= 1;
-            escSerial->bitsLeftToTransmit--;
-            bitq=0;
-            if(escSerial->bitsLeftToTransmit==0)
-            {
-                goto reload;
-            }
-        }
-        return;
-    }
-
-    if (isEscSerialTransmitBufferEmpty((serialPort_t *)escSerial)) {
-        escSerial->isTransmittingData = false;
-        escSerialInputPortConfig(escSerial->rxTimerHardware);
-    }
-}
-
-/*-----------------------BL*/
-/*********************************************/
+//-----------------------------
+//  BL, KISS, KISSALL & CASTLE
+//-----------------------------
 
 void processTxStateBL(escSerial_t *escSerial)
 {
@@ -660,7 +563,105 @@ void onSerialRxPinChangeBL(timerCCHandlerRec_t *cbRec, captureCompare_t capture)
         timerChConfigIC(escSerial->rxTimerHardware, inverted ? ICPOLARITY_RISING : ICPOLARITY_FALLING, 0);
     }
 }
-/*-------------------------BL*/
+
+//-----------------------------
+//  SIMONK
+//-----------------------------
+#ifdef USE_ESCSERIAL_SIMONK
+
+void processTxStateEsc(escSerial_t *escSerial)
+{
+    uint8_t mask;
+    static uint8_t bitq=0, transmitStart=0;
+    if (escSerial->isReceivingData) {
+        return;
+    }
+
+    if(transmitStart==0)
+    {
+        setTxSignalEsc(escSerial, 1);
+    }
+    if (!escSerial->isTransmittingData) {
+        char byteToSend;
+reload:
+        if (isEscSerialTransmitBufferEmpty((serialPort_t *)escSerial)) {
+            // canreceive
+            transmitStart=0;
+            return;
+        }
+
+        if(transmitStart<3)
+        {
+            if(transmitStart==0)
+                byteToSend = 0xff;
+            if(transmitStart==1)
+                byteToSend = 0xff;
+            if(transmitStart==2)
+                byteToSend = 0x7f;
+            transmitStart++;
+        }
+        else{
+            // data to send
+            byteToSend = escSerial->port.txBuffer[escSerial->port.txBufferTail++];
+            if (escSerial->port.txBufferTail >= escSerial->port.txBufferSize) {
+                escSerial->port.txBufferTail = 0;
+            }
+        }
+
+
+        // build internal buffer, data bits (MSB to LSB)
+        escSerial->internalTxBuffer = byteToSend;
+        escSerial->bitsLeftToTransmit = 8;
+        escSerial->isTransmittingData = true;
+
+        //set output
+        escSerialOutputPortConfig(escSerial->rxTimerHardware);
+        return;
+    }
+
+    if (escSerial->bitsLeftToTransmit) {
+        mask = escSerial->internalTxBuffer & 1;
+        if(mask)
+        {
+            if(bitq==0 || bitq==1)
+            {
+                setTxSignalEsc(escSerial, 1);
+            }
+            if(bitq==2 || bitq==3)
+            {
+                setTxSignalEsc(escSerial, 0);
+            }
+        }
+        else
+        {
+            if(bitq==0 || bitq==2)
+            {
+                setTxSignalEsc(escSerial, 1);
+            }
+            if(bitq==1 ||bitq==3)
+            {
+                setTxSignalEsc(escSerial, 0);
+            }
+        }
+        bitq++;
+        if(bitq>3)
+        {
+            escSerial->internalTxBuffer >>= 1;
+            escSerial->bitsLeftToTransmit--;
+            bitq=0;
+            if(escSerial->bitsLeftToTransmit==0)
+            {
+                goto reload;
+            }
+        }
+        return;
+    }
+
+    if (isEscSerialTransmitBufferEmpty((serialPort_t *)escSerial)) {
+        escSerial->isTransmittingData = false;
+        escSerialInputPortConfig(escSerial->rxTimerHardware);
+    }
+}
 
 void extractAndStoreRxByteEsc(escSerial_t *escSerial)
 {
@@ -761,6 +762,7 @@ void onSerialRxPinChangeEsc(timerCCHandlerRec_t *cbRec, captureCompare_t capture
     }
 
 }
+#endif // SIMONK
 
 uint32_t escSerialTotalBytesWaiting(const serialPort_t *instance)
 {
@@ -1017,6 +1019,4 @@ void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output, uin
         }
     }
 }
-
-
 #endif
