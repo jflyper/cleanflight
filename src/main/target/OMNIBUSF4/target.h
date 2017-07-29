@@ -83,27 +83,35 @@
 #endif
 
 #define MAG
+
 #define USE_MAG_HMC5883
-#define MAG_HMC5883_ALIGN       CW90_DEG
+
+#ifdef DYSF4PRO
+#define MAG_I2C_INSTANCE        (I2CDEV_1) // Internal I2C for DYSF4PRO
+#else
+#define MAG_I2C_INSTANCE        I2C_DEVICE
+#endif
 
 //#define USE_MAG_NAZA                   // Delete this on next major release
 //#define MAG_NAZA_ALIGN CW180_DEG_FLIP  // Ditto
 
 #define BARO
-#if defined(OMNIBUSF4SD)
+
+// Some polular baros, onboard or external
 #define USE_BARO_BMP280
+#define USE_BARO_MS5611
+
+#if defined(OMNIBUSF4SD)
 #define USE_BARO_SPI_BMP280
 #define BMP280_SPI_INSTANCE     SPI3
 #define BMP280_CS_PIN           PB3 // v1
-#endif
-#define USE_BARO_BMP280
-#define USE_BARO_MS5611
-#define BARO_I2C_INSTANCE       (I2CDEV_2)
-
-#if defined(OMNIBUSF4SD)
 #define DEFAULT_BARO_SPI_BMP280
+#elif defined(DYSF4PRO)
+#define DEFAULT_BARO_MS5611
+#define BARO_I2C_INSTANCE       (I2CDEV_1) // Onboard
 #else
 #define DEFAULT_BARO_BMP280
+#define BARO_I2C_INSTANCE       (I2CDEV_2)
 #endif
 
 #define OSD
@@ -192,14 +200,27 @@
 #define SPI3_MOSI_PIN           PC12
 
 #define USE_I2C
+
+// Common to all variants
 #define USE_I2C_DEVICE_2
 #define I2C2_SCL                NONE // PB10, shared with UART3TX
 #define I2C2_SDA                NONE // PB11, shared with UART3RX
+
+// Secondary I2C for OMNIBUSF4 and OMNIBUSF4SD
 #if defined(OMNIBUSF4) || defined(OMNIBUSF4SD)
 #define USE_I2C_DEVICE_3
 #define I2C3_SCL                NONE // PA8, PWM6
 #define I2C3_SDA                NONE // PC9, CH6
 #endif
+
+// Internal I2C for DYSF4PRO, for onboard baro and mag
+#if defined(DYSF4PRO)
+#define USE_I2C_DEVICE_1
+#define I2C1_SCL                PB8
+#define I2C1_SDA                PB9
+#endif
+
+// Default I2C is still I2C2 (shared with UART3)
 #define I2C_DEVICE              (I2CDEV_2)
 
 #define USE_ADC
