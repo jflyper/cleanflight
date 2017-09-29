@@ -21,4 +21,4 @@
 #include "flash.h"
 
 struct busDevice_s;
-const flashVTable_t *m25p16_detect(struct busDevice_s *busdev);
+const flashVTable_t *w25n01g_detect(struct busDevice_s *busdev);

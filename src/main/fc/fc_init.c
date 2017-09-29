@@ -233,8 +233,8 @@ void spiPreInit(void)
 #ifdef RTC6705_CS_PIN // XXX VTX_RTC6705? Should use USE_ format.
     spiPreInitCs(IO_TAG(RTC6705_CS_PIN));
 #endif
-#ifdef USE_FLASH_M25P16
-    spiPreInitCs(IO_TAG(M25P16_CS_PIN));
+#ifdef USE_FLASH_M25P16 // XXX USE_FLASH
+    spiPreInitCs(IO_TAG(M25P16_CS_PIN)); // XXX FLASH_CS_PIN
 #endif
 #if defined(USE_RX_SPI) && !defined(USE_RX_SOFTSPI)
     spiPreInitCs(IO_TAG(RX_NSS_PIN));
@@ -632,8 +632,8 @@ void init(void)
 #endif
 
 #ifdef USE_FLASHFS
-#if defined(USE_FLASH_M25P16)
-    m25p16_init(flashConfig());
+#if defined(USE_FLASH)
+    flashInit(flashConfig());
 #endif
     flashfsInit();
 #endif

@@ -290,7 +290,9 @@ endif
 
 ifneq ($(filter ONBOARDFLASH,$(FEATURES)),)
 SRC += \
+            drivers/flash.c \
             drivers/flash_m25p16.c \
+            drivers/flash_w25n01g.c \
             io/flashfs.c
 endif
 

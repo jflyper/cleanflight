@@ -55,10 +55,12 @@
 #endif
 
 #define ACC
-#define USE_ACC_SPI_MPU6000
+//#define USE_ACC_SPI_MPU6000
+#define USE_FAKE_ACC
 
 #define GYRO
-#define USE_GYRO_SPI_MPU6000
+//#define USE_GYRO_SPI_MPU6000
+#define USE_FAKE_GYRO
 
 #define MPU6000_CS_PIN          PA4
 #define MPU6000_SPI_INSTANCE    SPI1
@@ -120,6 +122,15 @@
 #define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
 #if defined(OMNIBUSF4SD)
+
+#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+#define M25P16_CS_PIN           SPI2_NSS_PIN
+#define M25P16_SPI_INSTANCE     SPI2
+#define USE_FLASHFS
+//#define USE_FLASH_M25P16
+#define USE_FLASH_W25N01G
+
+#if 0
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 #define USE_SDCARD
 #define SDCARD_DETECT_INVERTED
@@ -135,6 +146,9 @@
 #define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG     DMA_FLAG_TCIF4
 #define SDCARD_DMA_CLK                          RCC_AHB1Periph_DMA1
 #define SDCARD_DMA_CHANNEL                      DMA_Channel_0
+#endif
+
+
 #elif defined(LUXF4OSD)
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
 #define M25P16_CS_PIN           PB12
@@ -146,7 +160,8 @@
 #define M25P16_CS_PIN           SPI3_NSS_PIN
 #define M25P16_SPI_INSTANCE     SPI3
 #define USE_FLASHFS
-#define USE_FLASH_M25P16
+//#define USE_FLASH_M25P16
+#define USE_FLASH_W25N01G
 #endif // OMNIBUSF4
 
 #define USE_VCP
