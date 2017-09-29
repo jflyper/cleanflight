@@ -21,6 +21,7 @@
 #include "drivers/io_types.h"
 
 typedef struct flashGeometry_s {
+    uint8_t dieCount;
     uint16_t sectors; // Count of the number of erasable blocks on the device
     const uint16_t pageSize; // In bytes
     uint32_t sectorSize; // This is just pagesPerSector * pageSize
@@ -32,3 +33,34 @@ typedef struct flashConfig_s {
     ioTag_t csTag;
     uint8_t spiDevice;
 } flashConfig_t;
+
+bool flashInit(const flashConfig_t *flashConfig);
+
+bool flashIsReady(void);
+bool flashWaitForReady(uint32_t timeoutMillis);
+void flashEraseSector(uint32_t address);
+void flashEraseCompletely(void);
+void flashPageProgramBegin(uint32_t address);
+void flashPageProgramContinue(const uint8_t *data, int length);
+void flashPageProgramFinish(void);
+void flashPageProgramFlush(uint32_t address, const uint8_t *data, int length);
+void flashPageProgram(uint32_t address, const uint8_t *data, int length);
+int flashReadBytes(uint32_t address, uint8_t *buffer, int length);
+void flashClose(void);
+const flashGeometry_t * flashGetGeometry(void);
+
+// VTable should go to impl.h
+typedef struct flashVTable_s {
+    bool (*isReady)(void);
+    bool (*waitForReady)(uint32_t timeoutMillis);
+    void (*eraseSector)(uint32_t address);
+    void (*eraseCompletely)(void);
+    void (*pageProgramBegin)(uint32_t address);
+    void (*pageProgramContinue)(const uint8_t *data, int length);
+    void (*pageProgramFinish)(void);
+    void (*close)(void);
+    void (*pageProgram)(uint32_t address, const uint8_t *data, int length);
+    int (*readBytes)(uint32_t address, uint8_t *buffer, int length);
+    const flashGeometry_t *(*getGeometry)(void);
+} flashVTable_t;
+

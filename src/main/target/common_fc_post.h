@@ -64,3 +64,7 @@
 #undef VTX_TRAMP
 #undef VTX_SMARTAUDIO
 #endif
+
+#if defined(USE_FLASH_M25P16) || defined(USE_FLASH_W25N01G)
+#define USE_FLASH
+#endif

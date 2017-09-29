@@ -20,6 +20,8 @@
 
 #include "platform.h"
 
+#include "build/debug.h"
+
 #ifdef USE_FLASH_M25P16
 
 #include "flash.h"
@@ -48,14 +50,12 @@
 #define JEDEC_ID_MACRONIX_MX25L3206E   0xC22016
 #define JEDEC_ID_MACRONIX_MX25L6406E   0xC22017
 #define JEDEC_ID_MICRON_N25Q128        0x20ba18
-#define JEDEC_ID_WINBOND_W25Q128       0xEF4018
+#define JEDEC_ID_WINBOND_W25Q128       0xEF4018 // W25Q128FV in SPI mode
+#define JEDEC_ID_WINBOND_W25Q128FW     0xEF6018
 #define JEDEC_ID_MACRONIX_MX25L25635E  0xC22019
 
 #define DISABLE_M25P16       IOHi(bus->busdev_u.spi.csnPin); __NOP()
 #define ENABLE_M25P16        __NOP(); IOLo(bus->busdev_u.spi.csnPin)
-
-static busDevice_t busInstance;
-static busDevice_t *bus;
 
 // The timeout we expect between being able to issue page program instructions
 #define DEFAULT_TIMEOUT_MILLIS       6
@@ -64,7 +64,11 @@ static busDevice_t *bus;
 #define SECTOR_ERASE_TIMEOUT_MILLIS  5000
 #define BULK_ERASE_TIMEOUT_MILLIS    21000
 
+#define M25P16_PAGESIZE 256
+
 static flashGeometry_t geometry = {.pageSize = M25P16_PAGESIZE};
+
+static busDevice_t *bus = NULL;
 
 /*
  * Whether we've performed an action that could have made the device busy for writes.
@@ -136,11 +140,15 @@ bool m25p16_waitForReady(uint32_t timeoutMillis)
  *
  * Returns true if we get valid ident, false if something bad happened like there is no M25P16.
  */
-static bool m25p16_readIdentification(void)
+const flashVTable_t m25p16_vTable;
+
+const flashVTable_t *m25p16_detect(busDevice_t *busdev)
 {
     const uint8_t out[] = { M25P16_INSTRUCTION_RDID, 0, 0, 0 };
 
     delay(50); // short delay required after initialisation of SPI device instance.
+
+    bus = busdev;
 
     /* Just in case transfer fails and writes nothing, so we don't try to verify the ID against random garbage
      * from the stack:
@@ -177,6 +185,7 @@ static bool m25p16_readIdentification(void)
         break;
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
+    case JEDEC_ID_WINBOND_W25Q128FW:
         geometry.sectors = 256;
         geometry.pagesPerSector = 256;
         break;
@@ -188,55 +197,16 @@ static bool m25p16_readIdentification(void)
         // Unsupported chip or not an SPI NOR flash
         geometry.sectors = 0;
         geometry.pagesPerSector = 0;
-
         geometry.sectorSize = 0;
         geometry.totalSize = 0;
-        return false;
+        return NULL;
     }
 
     geometry.sectorSize = geometry.pagesPerSector * geometry.pageSize;
     geometry.totalSize = geometry.sectorSize * geometry.sectors;
 
     couldBeBusy = true; // Just for luck we'll assume the chip could be busy even though it isn't specced to be
-
-    return true;
-}
-
-/**
- * Initialize the driver, must be called before any other routines.
- *
- * Attempts to detect a connected m25p16. If found, true is returned and device capacity can be fetched with
- * m25p16_getGeometry().
- */
-bool m25p16_init(const flashConfig_t *flashConfig)
-{
-    /*
-        if we have already detected a flash device we can simply exit
-    */
-    if (geometry.sectors) {
-        return true;
-    }
-
-    bus = &busInstance;
-    bus->bustype = BUSTYPE_SPI;
-    spiBusSetInstance(bus, spiInstanceByDevice(SPI_CFG_TO_DEV(flashConfig->spiDevice)));
-    if (flashConfig->csTag) {
-        bus->busdev_u.spi.csnPin = IOGetByTag(flashConfig->csTag);
-    } else {
-        return false;
-    }
-
-    IOInit(bus->busdev_u.spi.csnPin, OWNER_FLASH_CS, 0);
-    IOConfigGPIO(bus->busdev_u.spi.csnPin, SPI_IO_CS_CFG);
-
-    DISABLE_M25P16;
-
-#ifndef M25P16_SPI_SHARED
-    //Maximum speed for standard READ command is 20mHz, other commands tolerate 25mHz
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_FAST);
-#endif
-
-    return m25p16_readIdentification();
+    return &m25p16_vTable;
 }
 
 /**
@@ -349,4 +319,16 @@ const flashGeometry_t* m25p16_getGeometry(void)
     return &geometry;
 }
 
+const flashVTable_t m25p16_vTable = {
+    .isReady = m25p16_isReady,
+    .waitForReady = m25p16_waitForReady,
+    .eraseSector = m25p16_eraseSector,
+    .eraseCompletely = m25p16_eraseCompletely,
+    .pageProgramBegin = m25p16_pageProgramBegin,
+    .pageProgramContinue = m25p16_pageProgramContinue,
+    .pageProgramFinish = m25p16_pageProgramFinish,
+    .pageProgram = m25p16_pageProgram,
+    .readBytes = m25p16_readBytes,
+    .getGeometry = m25p16_getGeometry,
+};
 #endif
