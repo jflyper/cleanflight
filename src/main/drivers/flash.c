@@ -164,13 +164,6 @@ int flashReadBytes(uint32_t address, uint8_t *buffer, int length)
     }
 }
 
-void flashClose(void)
-{
-    if (flashVTable && flashVTable->close) {
-        flashVTable->close();
-    }
-}
-
 static flashGeometry_t noFlashGeometry = {
     .totalSize = 0,
 };
