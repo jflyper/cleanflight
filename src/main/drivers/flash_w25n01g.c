@@ -401,7 +401,7 @@ void w25n01g_eraseCompletely(void)
     }
 }
 
-static void w25n01g_program_data_load(uint16_t columnAddress, const uint8_t *data, int length)
+static void w25n01g_programDataLoad(uint16_t columnAddress, const uint8_t *data, int length)
 {
     const uint8_t cmd[] = { W25N01G_INSTRUCTION_PROGRAM_DATA_LOAD, columnAddress >> 8, columnAddress& 0xff };
 
@@ -416,7 +416,7 @@ static void w25n01g_program_data_load(uint16_t columnAddress, const uint8_t *dat
     //DPRINTF(("    load Done\r\n"));
 }
 
-static void w25n01g_random_program_data_load(uint16_t columnAddress, const uint8_t *data, int length)
+static void w25n01g_randomProgramDataLoad(uint16_t columnAddress, const uint8_t *data, int length)
 {
     const uint8_t cmd[] = { W25N01G_INSTRUCTION_RANDOM_PROGRAM_DATA_LOAD, columnAddress >> 8, columnAddress& 0xff };
 
@@ -431,7 +431,7 @@ static void w25n01g_random_program_data_load(uint16_t columnAddress, const uint8
     //DPRINTF(("    random Done\r\n"));
 }
 
-static void w25n01g_program_execute(uint32_t pageAddress)
+static void w25n01g_programExecute(uint32_t pageAddress)
 {
     const uint8_t cmd[] = { W25N01G_INSTRUCTION_PROGRAM_EXECUTE, 0, pageAddress >> 8, pageAddress & 0xff };
 
@@ -502,7 +502,7 @@ void w25n01g_pageProgramBegin(uint32_t address)
             w25n01g_writeEnable();
 
             DPRINTF(("    PROGRAM_EXECUTE PA 0x%x\r\n", W25N01G_LINEAR_TO_PAGE(programStartAddress)));
-            w25n01g_program_execute(W25N01G_LINEAR_TO_PAGE(programStartAddress));
+            w25n01g_programExecute(W25N01G_LINEAR_TO_PAGE(programStartAddress));
 
             bufferDirty = false;
             isProgramming = true;
@@ -529,10 +529,10 @@ void w25n01g_pageProgramContinue(const uint8_t *data, int length)
 
     if (!bufferDirty) {
         DPRINTF(("    DATA_LOAD CA 0x%x length 0x%x\r\n", W25N01G_LINEAR_TO_COLUMN(programLoadAddress), length));
-        w25n01g_program_data_load(W25N01G_LINEAR_TO_COLUMN(programLoadAddress), data, length);
+        w25n01g_programDataLoad(W25N01G_LINEAR_TO_COLUMN(programLoadAddress), data, length);
     } else {
         DPRINTF(("    RANDOM_DATA_LOAD CA 0x%x length 0x%x\r\n", W25N01G_LINEAR_TO_COLUMN(programLoadAddress), length));
-        w25n01g_random_program_data_load(W25N01G_LINEAR_TO_COLUMN(programLoadAddress), data, length);
+        w25n01g_randomProgramDataLoad(W25N01G_LINEAR_TO_COLUMN(programLoadAddress), data, length);
     }
 
     // XXX Test if write enable is reset after each data loading.
@@ -547,7 +547,7 @@ void w25n01g_pageProgramFinish(void)
 
     if (!bufferDirty || W25N01G_LINEAR_TO_COLUMN(programLoadAddress) != 0) {
         DPRINTF(("    PROGRAM_EXECUTE PA 0x%x\r\n", W25N01G_LINEAR_TO_PAGE(programStartAddress)));
-        w25n01g_program_execute(W25N01G_LINEAR_TO_PAGE(programStartAddress));
+        w25n01g_programExecute(W25N01G_LINEAR_TO_PAGE(programStartAddress));
 
         bufferDirty = false;
         isProgramming = true;
@@ -584,7 +584,7 @@ void w25n01g_close(void)
 
     if (bufferDirty) {
         DPRINTF(("    PROGRAM_EXECUTE PA 0x%x\r\n", W25N01G_LINEAR_TO_PAGE(programStartAddress)));
-        w25n01g_program_execute(W25N01G_LINEAR_TO_PAGE(programStartAddress));
+        w25n01g_programExecute(W25N01G_LINEAR_TO_PAGE(programStartAddress));
 
         bufferDirty = false;
         isProgramming = true;
@@ -1058,21 +1058,21 @@ void w25n01g_deviceInit(void)
 
     DPRINTF(("    0\r\n"));
     w25n01g_writeEnable();
-    w25n01g_program_data_load(0, (uint8_t *)buf, 256);
+    w25n01g_programDataLoad(0, (uint8_t *)buf, 256);
 
     for (int chunk = 1 ; chunk < 8 ; chunk++) {
         DPRINTF(("    %d\r\n", chunk));
         w25n01g_writeEnable();
-        w25n01g_random_program_data_load(256 * chunk, (uint8_t *)buf + 256 * chunk, 256);
+        w25n01g_randomProgramDataLoad(256 * chunk, (uint8_t *)buf + 256 * chunk, 256);
     }
 
     DPRINTF(("Programming\r\n"));
 
-    w25n01g_program_execute(1); // PA
+    w25n01g_programExecute(1); // Page address
 
     DPRINTF(("Reading\r\n"));
 
-    w25n01g_readBytes(1 * W25N01G_PAGE_SIZE, (uint8_t *)buf, 2048);
+    w25n01g_readBytes(1 * W25N01G_PAGE_SIZE, (uint8_t *)buf, 2048); // Byte address
 
     DPRINTF(("Diff words\r\n"));
 
