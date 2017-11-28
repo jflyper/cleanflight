@@ -74,6 +74,7 @@ typedef enum {
     DEBUG_MAX7456_SPICLOCK,
     DEBUG_SBUS,
     DEBUG_FPORT,
+    DEBUG_LIDAR_TF,
     DEBUG_COUNT
 } debugType_e;
 

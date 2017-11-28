@@ -15,46 +15,18 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "stdint.h"
+#pragma once
 
+#include "common/time.h"
 
-#include "debug.h"
+typedef struct lidarTFConfig_s {
+    uint8_t device;
+} lidarTFConfig_t;
 
-int16_t debug[DEBUG16_VALUE_COUNT];
-uint8_t debugMode;
+#define LIDAR_TF_TYPE_TFMINI 0
+#define LIDAR_TF_TYPE_TF02   1
 
-#ifdef DEBUG_SECTION_TIMES
-uint32_t sectionTimes[2][4];
-#endif
+PG_DECLARE(lidarTFConfig_t, lidarTFConfig);
 
-const char * const debugModeNames[DEBUG_COUNT] = {
-    "NONE",
-    "CYCLETIME",
-    "BATTERY",
-    "GYRO",
-    "ACCELEROMETER",
-    "MIXER",
-    "AIRMODE",
-    "PIDLOOP",
-    "NOTCH",
-    "RC_INTERPOLATION",
-    "VELOCITY",
-    "DFILTER",
-    "ANGLERATE",
-    "ESC_SENSOR",
-    "SCHEDULER",
-    "STACK",
-    "ESC_SENSOR_RPM",
-    "ESC_SENSOR_TMP",
-    "ALTITUDE",
-    "FFT",
-    "FFT_TIME",
-    "FFT_FREQ",
-    "RX_FRSKY_SPI",
-    "GYRO_RAW",
-    "MAX7456_SIGNAL",
-    "MAX7456_SPICLOCK",
-    "SBUS",
-    "FPORT",
-    "LIDAR_TF",
-};
+void lidarTFInit(void);
+void lidarTFUpdate(timeUs_t currentTimeUs);

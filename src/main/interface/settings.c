@@ -33,6 +33,7 @@
 
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
+#include "drivers/lidar_tf.h"
 #include "drivers/light_led.h"
 #include "drivers/camera_control.h"
 #include "drivers/max7456.h"
@@ -824,6 +825,12 @@ const clivalue_t valueTable[] = {
     { "camera_control_ref_voltage", VAR_UINT16 | MASTER_VALUE, .config.minmax = { 200, 400 }, PG_CAMERA_CONTROL_CONFIG, offsetof(cameraControlConfig_t, refVoltage) },
     { "camera_control_key_delay", VAR_UINT16 | MASTER_VALUE, .config.minmax = { 100, 500 }, PG_CAMERA_CONTROL_CONFIG, offsetof(cameraControlConfig_t, keyDelayMs) },
     { "camera_control_internal_resistance", VAR_UINT16 | MASTER_VALUE, .config.minmax = { 10, 1000 }, PG_CAMERA_CONTROL_CONFIG, offsetof(cameraControlConfig_t, internalResistance) },
+#endif
+
+// PG_LIDAR_TF_CONFIG
+#ifdef USE_LIDAR_TF
+    { "lidar_tf_device", VAR_UINT8 | MASTER_VALUE, .config.minmax = { 0, 1 }, PG_LIDAR_TF_CONFIG, offsetof(lidarTFConfig_t, device) },
+    
 #endif
 };
 
