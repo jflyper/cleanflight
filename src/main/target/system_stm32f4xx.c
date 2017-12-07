@@ -739,6 +739,43 @@ void SetSysClock(void)
   { /* If HSE fails to start-up, the application will have wrong clock
          configuration. User can add here some code to deal with this error */
   }
+
+#if defined(STM32F446xx)
+//
+// STM32F446 running at 180MHz requires USB clock to be fed from PLLSAI.
+//
+#ifdef TARGET_XTAL_MHZ
+#define PLLSAI_M      TARGET_XTAL_MHZ
+#else
+#define PLLSAI_M      8
+#endif
+#define PLLSAI_N      192
+#define PLLSAI_P      4
+#define PLLSAI_Q      2
+
+  /* Configure 48MHz clock for USB */
+  // Set 48MHz clock source
+  RCC_48MHzClockSourceConfig(RCC_48MHZCLKSource_PLLSAI);
+
+  // Enable PLLSAI
+  RCC_PLLSAICmd(DISABLE);
+
+  #define RCC_PLLSAI_GET_FLAG() ((RCC->CR & (RCC_CR_PLLSAIRDY)) == (RCC_CR_PLLSAIRDY))
+
+  // wait for PLLSAI to be disabled
+  while (RCC_PLLSAI_GET_FLAG() != 0)
+  {}
+
+  RCC_PLLSAIConfig(PLLSAI_M, PLLSAI_N, PLLSAI_P, PLLSAI_Q);
+
+  RCC_PLLSAICmd(ENABLE);
+
+  // wait for PLLSAI to be enabled
+  while (RCC_PLLSAI_GET_FLAG() == 0)
+  {}
+
+  RCC->DCKCFGR2 |= RCC_DCKCFGR2_CK48MSEL;
+#endif /* STM32F446xx */
 }
 
 /**

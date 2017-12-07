@@ -1,0 +1,7 @@
+F446_TARGETS  += $(TARGET)
+FEATURES    = VCP
+
+TARGET_SRC = \
+            drivers/accgyro/accgyro_fake.c \
+            drivers/barometer/barometer_fake.c \
+            drivers/compass/compass_fake.c
