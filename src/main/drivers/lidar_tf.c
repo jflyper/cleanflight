@@ -23,16 +23,15 @@
 #ifdef USE_LIDAR_TF
 
 #include "build/debug.h"
-
 #include "build/build_config.h"
-
-#include "io/serial.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
-#include "lidar_tf.h"
+#include "io/serial.h"
+#include "drivers/altimeter.h"
 
+#include "lidar_tf.h"
 
 #define TF_FRAME_LENGTH    6             // Exclusing sync bytes (0x59) x 2 and checksum
 #define TF_FRAME_SYNC_BYTE 0x59
@@ -61,6 +60,7 @@
 #define TF_MINI_FRAME_INTEGRAL_TIME 4
 #define TF_MINI_RANGE_MIN 40
 #define TF_MINI_RANGE_MAX 1200
+#define TF_DETECTION_CONE_DECIDEGREES 450 // Very conservative.
 
 //
 // Benewake TF02 frame format (From SJ-GU-TF02-01 Version: A01)
@@ -82,6 +82,10 @@
 #define TF_02_FRAME_SIG 4
 #define TF_02_RANGE_MIN 40
 #define TF_02_RANGE_MAX 2200
+#define TF_02_DETECTION_CONE_DECIDEGREES 45
+
+static altimeterRange_t lidarTFRange;
+static altimeterDevice_t lidarTFDevice; // Forward
 
 static serialPort_t *tfSerialPort = NULL;
 
@@ -127,28 +131,32 @@ static void lidarTFSendCommand(void)
     }
 }
 
-void lidarTFInit(void)
+altimeterDevice_t *lidarTFInit(void)
 {
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_LIDAR_TF);
 
     if (!portConfig) {
-        return;
+        return NULL;
     }
 
     tfSerialPort = openSerialPort(portConfig->identifier, FUNCTION_LIDAR_TF, NULL, NULL, 115200, MODE_RXTX, 0);
 
     if (tfSerialPort == NULL) {
-        return;
+        return NULL;
     }
+
+    lidarTFRange.maxRangeCm = (lidarTFConfig()->device == LIDAR_TF_TYPE_TFMINI) ? TF_MINI_RANGE_MAX : TF_02_RANGE_MAX;
+    lidarTFRange.detectionConeDeciDegrees = TF_DETECTION_CONE_DECIDEGREES;
+    lidarTFRange.detectionConeExtendedDeciDegrees = TF_DETECTION_CONE_DECIDEGREES;
 
     tfFrameState = TF_FRAME_STATE_WAIT_START1;
     tfReceivePosition = 0;
+
+    return &lidarTFDevice;
 }
 
 void lidarTFUpdate(timeUs_t currentTimeUs)
 {
-    UNUSED(currentTimeUs);
-
     static timeUs_t lastFrameReceivedUs = 0;
 
     if (tfSerialPort == NULL) {
@@ -245,4 +253,15 @@ int32_t lidarTFGetDistance(void)
 {
     return lidarTFValue;
 }
+
+static altimeterVTable_t lidarTFVTable = {
+    .startReading = lidarTFUpdate,
+    .getDistance = lidarTFGetDistance,
+};
+
+static altimeterDevice_t lidarTFDevice = {
+    .range = &lidarTFRange,
+    .vTable = &lidarTFVTable
+};
+
 #endif

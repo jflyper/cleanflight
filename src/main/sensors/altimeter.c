@@ -41,6 +41,9 @@
 #include "sensors/battery.h"
 #include "sensors/altimeter.h"
 
+#include "drivers/sonar_hcsr04.h"
+#include "drivers/lidar_tf.h"
+
 // Sonar measurements are in cm, a value of ALTIMETER_OUT_OF_RANGE indicates sonar is not in range.
 // Inclination is adjusted by imu
 
@@ -74,7 +77,6 @@ static bool sonarDetect(void)
     if (feature(FEATURE_SONAR)) {
         // the user has set the sonar feature, so assume they have an HC-SR04 plugged in,
         // since there is no way to detect it
-        sensorsSet(SENSOR_ALTIMETER);
         return true;
     }
     return false;
@@ -83,16 +85,26 @@ static bool sonarDetect(void)
 
 void altimeterInit(void)
 {
+#ifdef USE_LIDAR_TF
+    altimeter = lidarTFInit();
+    if (altimeter) {
+        goto detected;
+    }
+#endif
+
 #ifdef USE_SONAR
     if (sonarDetect()) {
         altimeter = hcsr04_init(sonarConfig());
     }
+    if (altimeter) {
+        goto detected;
+    }
 #endif
 
-    if (!altimeter) {
-        return;
-    }
+    return;
 
+detected:;
+    sensorsSet(SENSOR_ALTIMETER);
     altimeterMaxRangeCm = altimeter->range->maxRangeCm;
     altimeterCfAltCm = altimeterMaxRangeCm / 2;
     altimeterMaxTiltDeciDegrees =  altimeter->range->detectionConeExtendedDeciDegrees / 2;
@@ -129,9 +141,8 @@ static int32_t applySonarMedianFilter(int32_t newAltimeterReading)
 
 void altimeterUpdate(timeUs_t currentTimeUs)
 {
-    UNUSED(currentTimeUs);
     if (altimeter) {
-        altimeter->vTable->startReading();
+        altimeter->vTable->startReading(currentTimeUs);
     }
 }
 

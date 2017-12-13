@@ -33,7 +33,6 @@
 #include "drivers/accgyro/accgyro.h"
 #include "drivers/camera_control.h"
 #include "drivers/compass/compass.h"
-#include "drivers/lidar_tf.h"
 #include "drivers/sensor.h"
 #include "drivers/serial.h"
 #include "drivers/stack_check.h"
@@ -348,9 +347,6 @@ void fcTasksInit(void)
     setTaskEnabled(TASK_RCDEVICE, rcdeviceIsEnabled());
 #endif
 #endif
-#ifdef USE_LIDAR_TF
-    setTaskEnabled(TASK_LIDAR_TF, true);
-#endif
 }
 
 cfTask_t cfTasks[TASK_COUNT] = {
@@ -500,7 +496,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_ALTIMETER] = {
         .taskName = "ALTIMETER",
         .taskFunc = altimeterUpdate,
-        .desiredPeriod = TASK_PERIOD_MS(70),        // 70ms required so that SONAR pulses do not interfere with each other. TF series LIDAR updates at 10msec (100Hz)
+        .desiredPeriod = TASK_PERIOD_MS(10),        // TF series LIDAR updates at 10msec (100Hz). Sonar will denominated.
         .staticPriority = TASK_PRIORITY_LOW,
     },
 #endif
@@ -600,15 +596,6 @@ cfTask_t cfTasks[TASK_COUNT] = {
         .taskName = "CAMCTRL",
         .taskFunc = taskCameraControl,
         .desiredPeriod = TASK_PERIOD_HZ(5),
-        .staticPriority = TASK_PRIORITY_IDLE
-    },
-#endif
-
-#ifdef USE_LIDAR_TF
-    [TASK_LIDAR_TF] = {
-        .taskName = "LIDAR_TF",
-        .taskFunc = lidarTFUpdate,
-        .desiredPeriod = TASK_PERIOD_HZ(100),
         .staticPriority = TASK_PRIORITY_IDLE
     },
 #endif

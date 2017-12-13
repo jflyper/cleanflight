@@ -20,7 +20,7 @@
 #include "common/time.h"
 
 typedef struct altimeterVTable_s {
-    void (*startReading)(void);
+    void (*startReading)(timeUs_t currentTimeUs);
     int32_t (*getDistance)(void);
 } altimeterVTable_t;
 

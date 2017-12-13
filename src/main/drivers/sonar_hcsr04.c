@@ -40,7 +40,7 @@
 
 #if defined(USE_SONAR)
 STATIC_UNIT_TESTED volatile int32_t measurement = -1;
-static uint32_t lastMeasurementAt;
+static timeUs_t lastMeasurementAtUs;
 
 extiCallbackRec_t hcsr04_extiCallbackRec;
 
@@ -100,27 +100,25 @@ const altimeterDevice_t *hcsr04_init(const sonarConfig_t *sonarConfig)
     EXTIEnable(echoIO, true);
 #endif
 
-    lastMeasurementAt = millis() - 60; // force 1st measurement in hcsr04_get_distance()
+    lastMeasurementAtUs = micros() - 60000; // force 1st measurement in hcsr04_get_distance()
 #else
-    UNUSED(lastMeasurementAt); // to avoid "unused" compiler warning
+    UNUSED(lastMeasurementAtUs); // to avoid "unused" compiler warning
 #endif
 
     return (&hcsr04Device);
 }
 
 // measurement reading is done asynchronously, using interrupt
-void hcsr04_start_reading(void)
+void hcsr04_start_reading(timeUs_t currentTimeUs)
 {
 #if !defined(UNIT_TEST)
-    uint32_t now = millis();
-
-    if (now < (lastMeasurementAt + 60)) {
+    if (currentTimeUs < (lastMeasurementAtUs + 60000)) {
         // the repeat interval of trig signal should be greater than 60ms
         // to avoid interference between connective measurements.
         return;
     }
 
-    lastMeasurementAt = now;
+    lastMeasurementAtUs = currentTimeUs;
 
     IOHi(triggerIO);
     //  The width of trig signal must be greater than 10us

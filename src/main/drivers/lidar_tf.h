@@ -18,6 +18,7 @@
 #pragma once
 
 #include "common/time.h"
+#include "drivers/altimeter.h"
 
 typedef struct lidarTFConfig_s {
     uint8_t device;
@@ -28,5 +29,4 @@ typedef struct lidarTFConfig_s {
 
 PG_DECLARE(lidarTFConfig_t, lidarTFConfig);
 
-void lidarTFInit(void);
-void lidarTFUpdate(timeUs_t currentTimeUs);
+altimeterDevice_t *lidarTFInit(void);

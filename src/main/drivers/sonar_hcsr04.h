@@ -39,5 +39,3 @@ typedef struct sonarRange_s {
 #define HCSR04_DETECTION_CONE_EXTENDED_DECIDEGREES 450 // in practice 45 degrees seems to work well
 
 const altimeterDevice_t *hcsr04_init(const sonarConfig_t *sonarConfig);
-void hcsr04_start_reading(void);
-int32_t hcsr04_get_distance(void);
